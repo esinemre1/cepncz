@@ -171,13 +171,13 @@ class CadView(context:Context):View(context){
  override fun onDraw(c:Canvas){
   c.drawColor(Color.rgb(24,27,31))
   if(entities.isEmpty()){text.textSize=28f;c.drawText("NCZ dosyası açın",28f,50f,text);return}
-  val detail=zoom>=0.55f
+  val detail=!performanceMode&&zoom>=0.55f
   val labels=showAreas&&!performanceMode&&zoom>=0.8f
   val allowText=!performanceMode||zoom>=2.5f
   val allowFill=!performanceMode||zoom>=2.0f
   line.strokeWidth=if(performanceMode)1f else 2f
   line.isAntiAlias=!performanceMode
-  for(m in visibleMeta()){
+  for(m in meta){
    val e=m.e
    if(e.layer in hidden||e.points.isEmpty()||!visible(m))continue
    line.color=color(e.layer);fill.color=Color.argb(55,Color.red(line.color),Color.green(line.color),Color.blue(line.color))
