@@ -62,7 +62,8 @@ class MainActivity:AppCompatActivity(){
    s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
    else->s.layerName+" • "+s.kind+" • X %.3f Y %.3f".format(s.x,s.y)
   }}
-  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))\n  workspace.addView(selectionInfo,FrameLayout.LayoutParams(-1,dp(34),Gravity.BOTTOM).apply{setMargins(dp(8),0,dp(8),dp(44))})
+  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
+  workspace.addView(selectionInfo,FrameLayout.LayoutParams(-1,dp(34),Gravity.BOTTOM).apply{setMargins(dp(8),0,dp(8),dp(44))})
   val navHud=TextView(this).apply{
    setTextColor(Color.WHITE);setBackgroundColor(Color.argb(175,20,23,27));textSize=11f
    text="ZOOM 1.00x";setPadding(dp(10),dp(5),dp(10),dp(5));gravity=Gravity.CENTER
@@ -70,7 +71,8 @@ class MainActivity:AppCompatActivity(){
   cad.onNavigationInfo={msg->navHud.text=msg}
   workspace.addView(navHud,FrameLayout.LayoutParams(-2,dp(34),Gravity.BOTTOM or Gravity.START).apply{setMargins(dp(8),0,0,dp(8))})
   val north=TextView(this).apply{
-   text="N\n↑";setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER
+   text="N
+↑";setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER
    setBackgroundColor(Color.argb(175,20,23,27))
   }
   workspace.addView(north,FrameLayout.LayoutParams(dp(46),dp(58),Gravity.TOP or Gravity.END).apply{setMargins(0,dp(8),dp(8),0)})
