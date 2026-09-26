@@ -71,8 +71,7 @@ class MainActivity:AppCompatActivity(){
   cad.onNavigationInfo={msg->navHud.text=msg}
   workspace.addView(navHud,FrameLayout.LayoutParams(-2,dp(34),Gravity.BOTTOM or Gravity.START).apply{setMargins(dp(8),0,0,dp(8))})
   val north=TextView(this).apply{
-   text="N
-↑";setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER
+   text="N ↑";setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER
    setBackgroundColor(Color.argb(175,20,23,27))
   }
   workspace.addView(north,FrameLayout.LayoutParams(dp(46),dp(58),Gravity.TOP or Gravity.END).apply{setMargins(0,dp(8),dp(8),0)})
