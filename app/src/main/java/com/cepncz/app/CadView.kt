@@ -26,13 +26,15 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
-  override fun onScale(d:ScaleGestureDetector):Boolean{val old=zoom;zoom=(zoom*d.scaleFactor).coerceIn(.05f,maxZoom);val r=zoom/old;ox=d.focusX-(d.focusX-ox)*r;oy=d.focusY-(d.focusY-oy)*r;invalidate();return true}
+  override fun onScale(d:ScaleGestureDetector):Boolean{
+   zoomAt(d.focusX,d.focusY,d.scaleFactor.coerceIn(.75f,1.33f));return true
+  }
  })
  private val gesture=GestureDetector(context,object:GestureDetector.SimpleOnGestureListener(){
   override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
