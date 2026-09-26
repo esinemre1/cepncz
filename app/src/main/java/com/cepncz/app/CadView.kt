@@ -26,7 +26,8 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
@@ -118,6 +119,16 @@ class CadView(context:Context):View(context){
     }
    }
   }
+  if(zoomWindow){
+   val a=zoomWindowStart;val b=zoomWindowNow
+   if(a!=null&&b!=null){
+    selectedPaint.color=Color.MAGENTA;selectedPaint.strokeWidth=3f
+    val l=min(sx(a.x,a.y),sx(b.x,b.y));val r=max(sx(a.x,a.y),sx(b.x,b.y))
+    val t=min(sy(a.x,a.y),sy(b.x,b.y));val bot=max(sy(a.x,a.y),sy(b.x,b.y))
+    c.drawRect(l,t,r,bot,selectedPaint)
+    selectedPaint.color=Color.YELLOW;selectedPaint.strokeWidth=5f
+   }
+  }
   if(measurePts.isNotEmpty()){
    selectedPaint.color=Color.CYAN;selectedPaint.strokeWidth=4f
    if(measurePts.size>1)c.drawPath(path(measurePts,false),selectedPaint)
@@ -180,6 +191,20 @@ class CadView(context:Context):View(context){
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
   parent?.requestDisallowInterceptTouchEvent(true)
+  if(zoomWindow){
+   when(e.actionMasked){
+    MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
+    MotionEvent.ACTION_MOVE->{zoomWindowNow=worldAt(e.x,e.y);postInvalidateOnAnimation()}
+    MotionEvent.ACTION_UP->{
+     val a=zoomWindowStart;val b=worldAt(e.x,e.y)
+     if(a!=null&&hypot((e.x-lx).toDouble(),(e.y-ly).toDouble())>=0.0){
+      if(abs(a.x-b.x)>0.001&&abs(a.y-b.y)>0.001)zoomToBounds(min(a.x,b.x),max(a.x,b.x),min(a.y,b.y),max(a.y,b.y))
+     }
+     zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;onMeasureInfo?.invoke("Zoom pencere tamamlandı")
+    }
+   }
+   return true
+  }
   if(e.actionMasked==MotionEvent.ACTION_POINTER_DOWN)multiTouch=true
   scaler.onTouchEvent(e)
   if(!multiTouch)gesture.onTouchEvent(e)
