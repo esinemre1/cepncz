@@ -31,7 +31,7 @@ class CadView(context:Context):View(context){
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
- private var snapHit:SnapHit?=null
+ private var snapHit:SnapHit?=null\n private var lastSnapAt=0L
  private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
@@ -278,7 +278,7 @@ class CadView(context:Context):View(context){
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
   parent?.requestDisallowInterceptTouchEvent(true)
-  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;if(snapEnabled&&!zoomWindow&&e.pointerCount==1)snapPoint(e.x,e.y)else snapHit=null;navUpdate();postInvalidateOnAnimation()
+  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;val now=System.currentTimeMillis();if(snapEnabled&&!zoomWindow&&e.pointerCount==1&&(!performanceMode||now-lastSnapAt>80)){snapPoint(e.x,e.y);lastSnapAt=now}else if(!snapEnabled||zoomWindow)snapHit=null;navUpdate();postInvalidateOnAnimation()
   if(zoomWindow){
    when(e.actionMasked){
     MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
