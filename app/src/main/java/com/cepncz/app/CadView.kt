@@ -73,13 +73,15 @@ class CadView(context:Context):View(context){
   }
  }
  private fun visibleMeta():List<Meta>{
-  if(!performanceMode||grid.isEmpty())return meta
-  val a=worldAt(-100f,height+100f);val b=worldAt(width+100f,-100f)
-  val x0=floor((min(a.x,b.x)-minX)/gridSize).toInt();val x1=floor((max(a.x,b.x)-minX)/gridSize).toInt()
-  val y0=floor((min(a.y,b.y)-minY)/gridSize).toInt();val y1=floor((max(a.y,b.y)-minY)/gridSize).toInt()
+  if(!performanceMode||grid.isEmpty()||width<=0||height<=0)return meta
+  val corners=listOf(worldAt(-160f,-160f),worldAt(width+160f,-160f),worldAt(-160f,height+160f),worldAt(width+160f,height+160f))
+  val wx0=corners.minOf{it.x};val wx1=corners.maxOf{it.x};val wy0=corners.minOf{it.y};val wy1=corners.maxOf{it.y}
+  var x0=floor((wx0-minX)/gridSize).toInt()-1;var x1=floor((wx1-minX)/gridSize).toInt()+1
+  var y0=floor((wy0-minY)/gridSize).toInt()-1;var y1=floor((wy1-minY)/gridSize).toInt()+1
+  x0=x0.coerceIn(-2,66);x1=x1.coerceIn(-2,66);y0=y0.coerceIn(-2,66);y1=y1.coerceIn(-2,66)
   val out=LinkedHashSet<Meta>();grid[gridKey(-1,-1)]?.let{out.addAll(it)}
   for(x in x0..x1)for(y in y0..y1)grid[gridKey(x,y)]?.let{out.addAll(it)}
-  return out.toList()
+  return if(out.isEmpty())meta else out.toList()
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
  fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;navUpdate();postInvalidateOnAnimation()}
