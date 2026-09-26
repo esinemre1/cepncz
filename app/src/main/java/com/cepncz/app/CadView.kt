@@ -29,7 +29,7 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)\n private var snapHit:SnapHit?=null
  private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
@@ -191,11 +191,37 @@ class CadView(context:Context):View(context){
   val y=maxY-((py-height/2f-oy)/zoom+height/2f-35f)/s
   return NczPoint(x,y)
  }
+ private fun screenDist(p:NczPoint,px:Float,py:Float)=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble())
+ private fun nearestOnSegment(p:NczPoint,a:NczPoint,b:NczPoint):NczPoint{
+  val vx=b.x-a.x;val vy=b.y-a.y;val l2=vx*vx+vy*vy;if(l2<1e-18)return a
+  val t=(((p.x-a.x)*vx+(p.y-a.y)*vy)/l2).coerceIn(0.0,1.0);return NczPoint(a.x+t*vx,a.y+t*vy)
+ }
+ private fun intersection(a:NczPoint,b:NczPoint,c:NczPoint,d:NczPoint):NczPoint?{
+  val den=(a.x-b.x)*(c.y-d.y)-(a.y-b.y)*(c.x-d.x);if(abs(den)<1e-12)return null
+  val t=((a.x-c.x)*(c.y-d.y)-(a.y-c.y)*(c.x-d.x))/den
+  val u=-((a.x-b.x)*(a.y-c.y)-(a.y-b.y)*(a.x-c.x))/den
+  if(t !in 0.0..1.0||u !in 0.0..1.0)return null
+  return NczPoint(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y))
+ }
  private fun snapPoint(px:Float,py:Float):NczPoint{
-  if(!snapEnabled)return worldAt(px,py)
-  var best=24.0;var hit:NczPoint?=null
-  for(m in meta){if(m.e.layer in hidden||!visible(m))continue;for(p in m.e.points){val d=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble());if(d<best){best=d;hit=p}}}
-  return hit?:worldAt(px,py)
+  val raw=worldAt(px,py);if(!snapEnabled){snapHit=null;return raw}
+  val candidates=ArrayList<SnapHit>();val segments=ArrayList<Pair<NczPoint,NczPoint>>()
+  for(m in meta){
+   val e=m.e;if(e.layer in hidden||!visible(m)||e.kind=="Text")continue
+   for(p in e.points){val d=screenDist(p,px,py);if(d<=26)candidates.add(SnapHit(p,"KÖŞE",d))}
+   if(e.points.size>1){
+    val n=if(e.kind=="Polygon")e.points.size else e.points.size-1
+    for(i in 0 until n){
+     val p1=e.points[i];val p2=e.points[(i+1)%e.points.size];segments.add(p1 to p2)
+     val mid=NczPoint((p1.x+p2.x)/2.0,(p1.y+p2.y)/2.0);val md=screenDist(mid,px,py);if(md<=24)candidates.add(SnapHit(mid,"ORTA",md))
+     val near=nearestOnSegment(raw,p1,p2);val nd=screenDist(near,px,py);if(nd<=18)candidates.add(SnapHit(near,"YAKIN",nd))
+    }
+   }
+  }
+  val nearby=segments.filter{(p1,p2)->min(screenDist(p1,px,py),screenDist(p2,px,py))<100||screenDist(nearestOnSegment(raw,p1,p2),px,py)<32}.take(30)
+  for(i in nearby.indices)for(j in i+1 until nearby.size){val q=intersection(nearby[i].first,nearby[i].second,nearby[j].first,nearby[j].second)?:continue;val d=screenDist(q,px,py);if(d<=24)candidates.add(SnapHit(q,"KESİŞİM",d))}
+  snapHit=candidates.minWithOrNull(compareBy<SnapHit>{when(it.kind){"KESİŞİM"->0;"KÖŞE"->1;"ORTA"->2;else->3}}.thenBy{it.distance})
+  return snapHit?.p?:raw
  }
  private fun updateMeasureInfo(){
   val total=length(measurePts,false)
