@@ -97,10 +97,24 @@ class CadView(context:Context):View(context){
 
  private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x);val yi=sy(p[i].y);val xj=sx(p[j].x);val yj=sy(p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
  private fun selectAt(x:Float,y:Float){
-  var hit=meta.asReversed().firstOrNull{it.e.layer !in hidden&&visible(it)&&it.e.kind=="Polygon"&&it.e.points.size>=3&&pointInPolygon(x,y,it.e.points)}?.e
-  if(hit==null){var best=Double.MAX_VALUE;for(m in meta)if(m.e.layer !in hidden&&visible(m))for(p in m.e.points){val e=m.e;{val d=hypot((sx(p.x)-x).toDouble(),(sy(p.y)-y).toDouble());if(d<best&&d<45){best=d;hit=e}}}}
-  selected=hit
-  onSelectionChanged?.invoke(hit?.let{val p=it.points.first();CadSelection(it.kind,it.layer,layerName(it.layer),p.x,p.y,if(it.kind=="Polygon")area(it.points)else 0.0,if(it.kind=="Polygon")perimeter(it.points)else 0.0)})
+  var chosen:Meta?=meta.asReversed().firstOrNull{m->
+   m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)
+  }
+  if(chosen==null){
+   var best=Double.MAX_VALUE
+   for(m in meta){
+    if(m.e.layer in hidden||!visible(m))continue
+    for(p in m.e.points){
+     val d=hypot((sx(p.x)-x).toDouble(),(sy(p.y)-y).toDouble())
+     if(d<best&&d<45.0){best=d;chosen=m}
+    }
+   }
+  }
+  selected=chosen?.e
+  onSelectionChanged?.invoke(chosen?.let{m->
+   val p=m.e.points.first()
+   CadSelection(m.e.kind,m.e.layer,layerName(m.e.layer),p.x,p.y,m.area,m.perimeter)
+  })
   invalidate()
  }
 
