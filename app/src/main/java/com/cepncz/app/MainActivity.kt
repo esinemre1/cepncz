@@ -45,7 +45,7 @@ class MainActivity:AppCompatActivity(){
   root.addView(tools)
   val workspace=FrameLayout(this)
   cad=CadView(this)
-  cad.onSelectionChanged={s->selectionInfo.text=when{
+  cad.onMeasureInfo={msg->selectionInfo.text=msg}\n  cad.onSelectionChanged={s->selectionInfo.text=when{
    s==null->"Seçim yok"
    s.queryMode=="AREA"&&s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
    s.queryMode=="LENGTH"->s.layerName+" • Uzunluk %.2f m".format(s.length)
