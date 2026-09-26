@@ -28,7 +28,7 @@ class CadView(context:Context):View(context){
  private var meta:List<Meta> = emptyList()
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
- private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
+ private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
  private var snapHit:SnapHit?=null
@@ -46,7 +46,7 @@ class CadView(context:Context):View(context){
  private val gesture=GestureDetector(context,object:GestureDetector.SimpleOnGestureListener(){
   override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
   override fun onDown(e:MotionEvent)=true
-  override fun onLongPress(e:MotionEvent){fitToScreen()}
+  override fun onLongPress(e:MotionEvent){}
   override fun onSingleTapConfirmed(e:MotionEvent):Boolean{if(queryMode==QueryMode.DISTANCE||queryMode==QueryMode.POLYLINE||queryMode==QueryMode.COORDINATE)measureTap(e.x,e.y)else selectAt(e.x,e.y);return true}
  })
 
@@ -293,19 +293,19 @@ class CadView(context:Context):View(context){
    }
    return true
   }
-  if(e.actionMasked==MotionEvent.ACTION_POINTER_DOWN)multiTouch=true
+  if(e.actionMasked==MotionEvent.ACTION_POINTER_DOWN){multiTouch=true;suppressTap=true}
   scaler.onTouchEvent(e)
-  if(!multiTouch)gesture.onTouchEvent(e)
+  if(!multiTouch&&!suppressTap)gesture.onTouchEvent(e)
   when(e.actionMasked){
-   MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false;multiTouch=false}
+   MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false;multiTouch=false;suppressTap=false;gesture.onTouchEvent(e)}
    MotionEvent.ACTION_MOVE->if(e.pointerCount==1&&!scaler.isInProgress&&!multiTouch){
     val dx=e.x-lx;val dy=e.y-ly
-    if(hypot(dx.toDouble(),dy.toDouble())>3.0)moved=true
+    if(hypot(dx.toDouble(),dy.toDouble())>3.0){moved=true;suppressTap=true}
     if(moved){ox+=dx;oy+=dy;postInvalidateOnAnimation()}
     lx=e.x;ly=e.y
    }
-   MotionEvent.ACTION_POINTER_UP->{lx=e.getX(0);ly=e.getY(0)}
-   MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{multiTouch=false;moved=false}
+   MotionEvent.ACTION_POINTER_UP->{val keep=if(e.actionIndex==0)1 else 0;if(keep<e.pointerCount){lx=e.getX(keep);ly=e.getY(keep)};suppressTap=true}
+   MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{if(!moved&&!suppressTap)gesture.onTouchEvent(e);multiTouch=false;moved=false;suppressTap=false}
   }
   return true
  }
