@@ -98,4 +98,4 @@ Tipler:
 "){it.key+" : "+it.value}).setPositiveButton("TAMAM",null).show()
   }}catch(e:Exception){Toast.makeText(this,"Dosya okunamadı: "+e.message,Toast.LENGTH_LONG).show()}
  }
-}
+}    val summary="Boyut: ${r.size} bayt\\nSürüm: $v\\nGeometri: ${r.entities.size}\\nTabaka: ${r.layers.size}\\n\\nTipler:\\n"+types.take(12).joinToString("\\n"){it.key+" : "+it.value}\n    AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage(summary).setPositiveButton("TAMAM",null).show()\n
