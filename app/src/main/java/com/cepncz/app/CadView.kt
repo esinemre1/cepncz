@@ -25,7 +25,7 @@ class CadView(context:Context):View(context){
  private val selectedPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;style=Paint.Style.STROKE;strokeWidth=5f}
  private var entities:List<NczEntity> = emptyList(); private var layers:List<String> = emptyList()
  private data class Meta(val e:NczEntity,val minX:Double,val maxX:Double,val minY:Double,val maxY:Double,val area:Double,val perimeter:Double,val cx:Double,val cy:Double)
- private var meta:List<Meta> = emptyList()
+ private var meta:List<Meta> = emptyList()\n private val grid=HashMap<Long,MutableList<Meta>>();private var gridSize=1.0
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
  private var performanceMode=false
@@ -59,6 +59,26 @@ class CadView(context:Context):View(context){
   meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
    Meta(e,ps.minOfOrNull{it.x}?:0.0,ps.maxOfOrNull{it.x}?:0.0,ps.minOfOrNull{it.y}?:0.0,ps.maxOfOrNull{it.y}?:0.0,ar,per,if(ps.isEmpty())0.0 else ps.sumOf{it.x}/ps.size,if(ps.isEmpty())0.0 else ps.sumOf{it.y}/ps.size)}
   fitToScreen()
+ }
+ private fun gridKey(x:Int,y:Int)=(x.toLong() shl 32) xor (y.toLong() and 0xffffffffL)
+ private fun buildGrid(){
+  grid.clear();if(meta.isEmpty())return
+  val span=max(maxX-minX,maxY-minY).coerceAtLeast(1.0);gridSize=(span/64.0).coerceAtLeast(.01)
+  for(m in meta){
+   val x0=floor((m.minX-minX)/gridSize).toInt();val x1=floor((m.maxX-minX)/gridSize).toInt()
+   val y0=floor((m.minY-minY)/gridSize).toInt();val y1=floor((m.maxY-minY)/gridSize).toInt()
+   if((x1-x0+1)*(y1-y0+1)>64){grid.getOrPut(gridKey(-1,-1)){mutableListOf()}.add(m);continue}
+   for(x in x0..x1)for(y in y0..y1)grid.getOrPut(gridKey(x,y)){mutableListOf()}.add(m)
+  }
+ }
+ private fun visibleMeta():List<Meta>{
+  if(!performanceMode||grid.isEmpty())return meta
+  val a=worldAt(-100f,height+100f);val b=worldAt(width+100f,-100f)
+  val x0=floor((min(a.x,b.x)-minX)/gridSize).toInt();val x1=floor((max(a.x,b.x)-minX)/gridSize).toInt()
+  val y0=floor((min(a.y,b.y)-minY)/gridSize).toInt();val y1=floor((max(a.y,b.y)-minY)/gridSize).toInt()
+  val out=LinkedHashSet<Meta>();grid[gridKey(-1,-1)]?.let{out.addAll(it)}
+  for(x in x0..x1)for(y in y0..y1)grid[gridKey(x,y)]?.let{out.addAll(it)}
+  return out.toList()
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
  fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;navUpdate();postInvalidateOnAnimation()}
