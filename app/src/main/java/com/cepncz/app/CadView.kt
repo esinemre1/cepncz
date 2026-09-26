@@ -56,7 +56,7 @@ class CadView(context:Context):View(context){
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
  fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;navUpdate();postInvalidateOnAnimation()}
- private fun navUpdate(){val p=lastWorld;onNavigationInfo?.invoke("ZOOM %.2fx%s".format(zoom,if(p==null)"" else "  •  X %.2f  Y %.2f".format(p.x,p.y)))}
+ private fun navUpdate(){val x=lastWorldX;val y=lastWorldY;onNavigationInfo?.invoke("ZOOM %.2fx%s".format(zoom,if(x==null||y==null)"" else "  •  X %.2f  Y %.2f".format(x,y)))}
  private fun zoomAt(fx:Float,fy:Float,factor:Float){
   val old=zoom;val next=(zoom*factor).coerceIn(.05f,maxZoom);if(next==old)return
   val r=next/old;zoom=next;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;navUpdate();postInvalidateOnAnimation()
@@ -239,7 +239,7 @@ class CadView(context:Context):View(context){
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
   parent?.requestDisallowInterceptTouchEvent(true)
-  lastWorld=worldAt(e.x,e.y);navUpdate()
+  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;navUpdate()
   if(zoomWindow){
    when(e.actionMasked){
     MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
