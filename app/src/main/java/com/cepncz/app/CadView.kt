@@ -175,7 +175,7 @@ class CadView(context:Context):View(context){
   val allowFill=!performanceMode||zoom>=2.0f
   line.strokeWidth=if(performanceMode)1f else 2f
   line.isAntiAlias=!performanceMode
-  for(m in meta){
+  for(m in visibleMeta()){
    val e=m.e
    if(e.layer in hidden||e.points.isEmpty()||!visible(m))continue
    line.color=color(e.layer);fill.color=Color.argb(55,Color.red(line.color),Color.green(line.color),Color.blue(line.color))
