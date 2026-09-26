@@ -116,6 +116,12 @@ class CadView(context:Context):View(context){
     }
    }
   }
+  if(measurePts.isNotEmpty()){
+   selectedPaint.color=Color.CYAN;selectedPaint.strokeWidth=4f
+   if(measurePts.size>1)c.drawPath(path(measurePts,false),selectedPaint)
+   for(p in measurePts)c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),8f,selectedPaint)
+   selectedPaint.color=Color.YELLOW;selectedPaint.strokeWidth=5f
+  }
  }
 
  private fun worldAt(px:Float,py:Float):NczPoint{
