@@ -16,6 +16,7 @@ class MainActivity:AppCompatActivity(){
  private lateinit var cad:CadView
  private lateinit var panel:LinearLayout
  private lateinit var layerList:LinearLayout
+ private lateinit var selectionInfo:TextView
  private var layerQuery=""
  private val picker=registerForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->if(u!=null)load(u)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
@@ -32,11 +33,19 @@ class MainActivity:AppCompatActivity(){
   tools.addView(toolButton("SIĞDIR"){cad.fitToScreen()},LinearLayout.LayoutParams(0,dp(42),1f))
   tools.addView(toolButton("−"){cad.zoomOut()},LinearLayout.LayoutParams(0,dp(42),1f))
   tools.addView(toolButton("+"){cad.zoomIn()},LinearLayout.LayoutParams(0,dp(42),1f))
-  tools.addView(toolButton("TARAMA"){cad.setFilled(!cad.isFilled())},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("TARAMA"){val m=cad.cycleFillMode();Toast.makeText(this,"Tarama: "+cad.fillModeName(),Toast.LENGTH_SHORT).show()},LinearLayout.LayoutParams(0,dp(42),1f))
   tools.addView(toolButton("ALAN"){cad.setShowAreas(!cad.isShowAreas())},LinearLayout.LayoutParams(0,dp(42),1f))
+  val tools2=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(4),0,dp(4),dp(4))}
+  tools2.addView(toolButton("NOKTA"){cad.setShowPoints(!cad.isShowPoints())},LinearLayout.LayoutParams(0,dp(40),1f))
+  tools2.addView(toolButton("SEÇİMİ SİL"){cad.clearSelection()},LinearLayout.LayoutParams(0,dp(40),1f))
+  selectionInfo=TextView(this).apply{setTextColor(Color.WHITE);textSize=12f;text="Objeye dokun: bilgi burada gösterilir";setPadding(dp(8),0,dp(6),0);gravity=Gravity.CENTER_VERTICAL;maxLines=2}
+  tools2.addView(selectionInfo,LinearLayout.LayoutParams(0,dp(48),2.4f))
+  root.addView(tools2)
   root.addView(tools)
   val workspace=FrameLayout(this)
-  cad=CadView(this);workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
+  cad=CadView(this)
+  cad.onSelectionChanged={s->selectionInfo.text=if(s==null)"Seçim yok" else if(s.area>0.0) s.layerName+" • "+s.kind+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter) else s.layerName+" • "+s.kind+" • X %.3f Y %.3f".format(s.x,s.y)}
+  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
   panel=buildLayerPanel();workspace.addView(panel,FrameLayout.LayoutParams(dp(310),-1,Gravity.END))
   root.addView(workspace,LinearLayout.LayoutParams(-1,0,1f));setContentView(root)
  }
