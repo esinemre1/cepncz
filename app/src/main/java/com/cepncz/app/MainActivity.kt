@@ -88,14 +88,15 @@ class MainActivity:AppCompatActivity(){
    cad.setEntities(r.entities,r.layers);refreshLayers()
    val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
    info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
-   AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage("Boyut: "+r.size+" bayt
-Sürüm: "+v+"
-Geometri: "+r.entities.size+"
-Tabaka: "+r.layers.size+"
-
-Tipler:
-"+types.take(12).joinToString("
-"){it.key+" : "+it.value}).setPositiveButton("TAMAM",null).show()
+   val summary=buildString {
+    append("Boyut: ").append(r.size).append(" bayt").appendLine()
+    append("Sürüm: ").append(v).appendLine()
+    append("Geometri: ").append(r.entities.size).appendLine()
+    append("Tabaka: ").append(r.layers.size).appendLine().appendLine()
+    append("Tipler:").appendLine()
+    append(types.take(12).joinToString(separator=System.lineSeparator()){it.key+" : "+it.value})
+   }
+   AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage(summary).setPositiveButton("TAMAM",null).show()
   }}catch(e:Exception){Toast.makeText(this,"Dosya okunamadı: "+e.message,Toast.LENGTH_LONG).show()}
  }
 }    val summary="Boyut: ${r.size} bayt\\nSürüm: $v\\nGeometri: ${r.entities.size}\\nTabaka: ${r.layers.size}\\n\\nTipler:\\n"+types.take(12).joinToString("\\n"){it.key+" : "+it.value}\n    AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage(summary).setPositiveButton("TAMAM",null).show()\n
