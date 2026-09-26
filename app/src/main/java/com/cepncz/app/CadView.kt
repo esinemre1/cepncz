@@ -132,3 +132,12 @@ class CadView(context:Context):View(context){
   invalidate()
  }
 
+ override fun onTouchEvent(e:MotionEvent):Boolean{
+  scaler.onTouchEvent(e);gesture.onTouchEvent(e)
+  if(e.pointerCount==1&&!scaler.isInProgress)when(e.actionMasked){
+   MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false}
+   MotionEvent.ACTION_MOVE->{val dx=e.x-lx;val dy=e.y-ly;if(abs(dx)+abs(dy)>5)moved=true;if(moved){ox+=dx;oy+=dy;invalidate()};lx=e.x;ly=e.y}
+  }
+  return true
+ }
+}
