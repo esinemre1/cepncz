@@ -24,14 +24,15 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false
- private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
+ private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0\n private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
-  override fun onScale(d:ScaleGestureDetector):Boolean{val old=zoom;zoom=(zoom*d.scaleFactor).coerceIn(.1f,100f);val r=zoom/old;ox=d.focusX-(d.focusX-ox)*r;oy=d.focusY-(d.focusY-oy)*r;invalidate();return true}
+  override fun onScale(d:ScaleGestureDetector):Boolean{val old=zoom;zoom=(zoom*d.scaleFactor).coerceIn(.05f,maxZoom);val r=zoom/old;ox=d.focusX-(d.focusX-ox)*r;oy=d.focusY-(d.focusY-oy)*r;invalidate();return true}
  })
  private val gesture=GestureDetector(context,object:GestureDetector.SimpleOnGestureListener(){
-  override fun onDoubleTap(e:MotionEvent):Boolean{fitToScreen();return true}
+  override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.5f);return true}
+  override fun onLongPress(e:MotionEvent){fitToScreen()}
   override fun onSingleTapConfirmed(e:MotionEvent):Boolean{selectAt(e.x,e.y);return true}
  })
 
@@ -56,12 +57,12 @@ class CadView(context:Context):View(context){
  fun layerCounts():Map<Int,Int> = entities.groupingBy{it.layer}.eachCount()
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
- private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
+ private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxY-minY).coerceAtLeast(.001).toFloat(),(height-70f)/(maxX-minX).coerceAtLeast(.001).toFloat())}
  private fun sx(x:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
  private fun sy(y:Double)=((35f+(maxY-y).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
  private fun perimeter(p:List<NczPoint>):Double{if(p.size<2)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=hypot(a.x-b.x,a.y-b.y)};return s}
- private fun path(p:List<NczPoint>,close:Boolean):Path{val q=Path();q.moveTo(sx(p[0].x),sy(p[0].y));p.drop(1).forEach{q.lineTo(sx(it.x),sy(it.y))};if(close)q.close();return q}
+ private fun path(p:List<NczPoint>,close:Boolean):Path{val q=Path();q.moveTo(sx(p[0].x,p[0].y),sy(p[0].x,p[0].y));p.drop(1).forEach{q.lineTo(sx(it.x,it.y),sy(it.x,it.y))};if(close)q.close();return q}
  private fun color(layer:Int)=palette[abs(layer)%palette.size]
 
  private fun hatchPolygon(c:Canvas,p:Path){
@@ -70,7 +71,7 @@ class CadView(context:Context):View(context){
  }
 
  private fun visible(m:Meta):Boolean{
-  val l=sx(m.minX);val r=sx(m.maxX);val t=sy(m.maxY);val b=sy(m.minY)
+  val l=sx(m.minX,m.minY);val r=sx(m.maxX,m.maxY);val t=sy(m.maxX,m.maxY);val b=sy(m.minX,m.minY)
   return r>=-80f&&l<=width+80f&&b>=-80f&&t<=height+80f
  }
  override fun onDraw(c:Canvas){
@@ -84,18 +85,18 @@ class CadView(context:Context):View(context){
    line.color=color(e.layer);fill.color=Color.argb(55,Color.red(line.color),Color.green(line.color),Color.blue(line.color))
    when(e.kind){
     "Polygon"->{val p=path(e.points,true);when(fillMode){FillMode.SOLID->c.drawPath(p,fill);FillMode.HATCH->hatchPolygon(c,p);else->{}};c.drawPath(p,line)
-     if(labels&&m.area>.01){text.textSize=22f;c.drawText("%.2f m²".format(m.area),sx(m.cx),sy(m.cy),text)}}
-    "Circle"->{val p=e.points[0];c.drawCircle(sx(p.x),sy(p.y),(e.radius*bs()*zoom).toFloat(),line)}
-    "Arc"->{val p=e.points[0];val r=(e.radius*bs()*zoom).toFloat();c.drawArc(RectF(sx(p.x)-r,sy(p.y)-r,sx(p.x)+r,sy(p.y)+r),e.startAngle.toFloat(),(e.endAngle-e.startAngle).toFloat(),false,line)}
-    "Text"->{val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(9f,44f);c.save();c.rotate((-e.rotation).toFloat(),sx(p.x),sy(p.y));c.drawText(e.text,sx(p.x),sy(p.y),text);c.restore();text.color=Color.WHITE}
-    else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x),sy(p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false),line)}
+     if(labels&&m.area>.01){text.textSize=22f;c.drawText("%.2f m²".format(m.area),sx(m.cx,m.cy),sy(m.cx,m.cy),text)}}
+    "Circle"->{val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),(e.radius*bs()*zoom).toFloat(),line)}
+    "Arc"->{val p=e.points[0];val r=(e.radius*bs()*zoom).toFloat();c.drawArc(RectF(sx(p.x,p.y)-r,sy(p.x,p.y)-r,sx(p.x,p.y)+r,sy(p.x,p.y)+r),e.startAngle.toFloat(),(e.endAngle-e.startAngle).toFloat(),false,line)}
+    "Text"->{val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(9f,44f);c.save();c.rotate((-e.rotation).toFloat(),sx(p.x,p.y),sy(p.x,p.y));c.drawText(e.text,sx(p.x,p.y),sy(p.x,p.y),text);c.restore();text.color=Color.WHITE}
+    else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false),line)}
    }
-   if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x),sy(it.y),4f,line)}
-   if(e===selected){when{e.kind=="Polygon"->c.drawPath(path(e.points,true),selectedPaint);e.points.size>1->c.drawPath(path(e.points,false),selectedPaint);else->c.drawCircle(sx(e.points[0].x),sy(e.points[0].y),12f,selectedPaint)}}
+   if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x,it.y),sy(it.x,it.y),4f,line)}
+   if(e===selected){when{e.kind=="Polygon"->c.drawPath(path(e.points,true),selectedPaint);e.points.size>1->c.drawPath(path(e.points,false),selectedPaint);else->c.drawCircle(sx(e.points[0].x,e.points[0].y),sy(e.points[0].x,e.points[0].y),12f,selectedPaint)}}
   }
  }
 
- private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x);val yi=sy(p[i].y);val xj=sx(p[j].x);val yj=sy(p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
+ private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x,p[i].y);val yi=sy(p[i].x,p[i].y);val xj=sx(p[j].x,p[j].y);val yj=sy(p[j].x,p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
  private fun selectAt(x:Float,y:Float){
   var chosen:Meta?=meta.asReversed().firstOrNull{m->
    m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)
@@ -105,7 +106,7 @@ class CadView(context:Context):View(context){
    for(m in meta){
     if(m.e.layer in hidden||!visible(m))continue
     for(p in m.e.points){
-     val d=hypot((sx(p.x)-x).toDouble(),(sy(p.y)-y).toDouble())
+     val d=hypot((sx(p.x,p.y)-x).toDouble(),(sy(p.x,p.y)-y).toDouble())
      if(d<best&&d<45.0){best=d;chosen=m}
     }
    }
