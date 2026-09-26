@@ -59,7 +59,7 @@ class CadView(context:Context):View(context){
   if(performanceMode){fillMode=FillMode.NONE;showAreas=false;showPoints=false;showEdgeLengths=false}
   meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
    Meta(e,ps.minOfOrNull{it.x}?:0.0,ps.maxOfOrNull{it.x}?:0.0,ps.minOfOrNull{it.y}?:0.0,ps.maxOfOrNull{it.y}?:0.0,ar,per,if(ps.isEmpty())0.0 else ps.sumOf{it.x}/ps.size,if(ps.isEmpty())0.0 else ps.sumOf{it.y}/ps.size)}
-  fitToScreen()
+  buildGrid();fitToScreen()
  }
  private fun gridKey(x:Int,y:Int)=(x.toLong() shl 32) xor (y.toLong() and 0xffffffffL)
  private fun buildGrid(){
