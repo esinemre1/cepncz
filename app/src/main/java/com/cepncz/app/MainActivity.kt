@@ -35,6 +35,8 @@ class MainActivity:AppCompatActivity(){
   tools.addView(toolButton("+"){cad.zoomIn()},LinearLayout.LayoutParams(0,dp(42),1f))
   tools.addView(toolButton("TARAMA"){val m=cad.cycleFillMode();Toast.makeText(this,"Tarama: "+cad.fillModeName(),Toast.LENGTH_SHORT).show()},LinearLayout.LayoutParams(0,dp(42),1f))
   tools.addView(toolButton("ALAN"){cad.setShowAreas(!cad.isShowAreas())},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("PENCERE"){cad.startZoomWindow()},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("SEÇİME"){if(!cad.zoomToSelected())Toast.makeText(this,"Önce obje seç",Toast.LENGTH_SHORT).show()},LinearLayout.LayoutParams(0,dp(42),1f))
   val tools2=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(4),0,dp(4),dp(4))}
   tools2.addView(toolButton("ALAN SORGU"){cad.setQueryMode(CadView.QueryMode.AREA);selectionInfo.text="Kapalı alana dokun"},LinearLayout.LayoutParams(0,dp(40),1f))
   tools2.addView(toolButton("UZUNLUK"){cad.setQueryMode(CadView.QueryMode.LENGTH);selectionInfo.text="Çizgi veya kenara dokun"},LinearLayout.LayoutParams(0,dp(40),1f))
