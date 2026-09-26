@@ -45,7 +45,8 @@ class MainActivity:AppCompatActivity(){
   root.addView(tools)
   val workspace=FrameLayout(this)
   cad=CadView(this)
-  cad.onMeasureInfo={msg->selectionInfo.text=msg}\n  cad.onSelectionChanged={s->selectionInfo.text=when{
+  cad.onMeasureInfo={msg->selectionInfo.text=msg}
+  cad.onSelectionChanged={s->selectionInfo.text=when{
    s==null->"Seçim yok"
    s.queryMode=="AREA"&&s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
    s.queryMode=="LENGTH"->s.layerName+" • Uzunluk %.2f m".format(s.length)
@@ -87,7 +88,14 @@ class MainActivity:AppCompatActivity(){
    cad.setEntities(r.entities,r.layers);refreshLayers()
    val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
    info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
-   AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage("Boyut: "+r.size+" bayt\nSürüm: "+v+"\nGeometri: "+r.entities.size+"\nTabaka: "+r.layers.size+"\n\nTipler:\n"+types.take(12).joinToString("\n"){it.key+" : "+it.value}).setPositiveButton("TAMAM",null).show()
+   AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage("Boyut: "+r.size+" bayt
+Sürüm: "+v+"
+Geometri: "+r.entities.size+"
+Tabaka: "+r.layers.size+"
+
+Tipler:
+"+types.take(12).joinToString("
+"){it.key+" : "+it.value}).setPositiveButton("TAMAM",null).show()
   }}catch(e:Exception){Toast.makeText(this,"Dosya okunamadı: "+e.message,Toast.LENGTH_LONG).show()}
  }
 }
