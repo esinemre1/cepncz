@@ -11,7 +11,8 @@ import kotlin.math.*
 data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x:Double,val y:Double,val area:Double,val perimeter:Double,val length:Double=0.0,val queryMode:String="SELECT")
 
 class CadView(context:Context):View(context){
- enum class FillMode{NONE,SOLID,HATCH}\n enum class QueryMode{SELECT,AREA,LENGTH}
+ enum class FillMode{NONE,SOLID,HATCH}
+ enum class QueryMode{SELECT,AREA,LENGTH}
  var onSelectionChanged:((CadSelection?)->Unit)?=null
  private val line=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=2f}
  private val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL}
@@ -24,7 +25,8 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false
- private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0\n private val maxZoom=5000f
+ private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
+ private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
@@ -44,12 +46,14 @@ class CadView(context:Context):View(context){
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
  fun fitToScreen(){zoom=1f;ox=0f;oy=0f;invalidate()}
- fun zoomIn(){zoom=(zoom*1.4f).coerceAtMost(100f);invalidate()}
- fun zoomOut(){zoom=(zoom/1.4f).coerceAtLeast(.1f);invalidate()}
+ private fun zoomAt(fx:Float,fy:Float,factor:Float){val old=zoom;zoom=(zoom*factor).coerceIn(.05f,maxZoom);val r=zoom/old;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;invalidate()}
+ fun zoomIn(){zoomAt(width/2f,height/2f,1.8f)}
+ fun zoomOut(){zoomAt(width/2f,height/2f,1f/1.8f)}
  fun cycleFillMode():FillMode{fillMode=when(fillMode){FillMode.NONE->FillMode.SOLID;FillMode.SOLID->FillMode.HATCH;FillMode.HATCH->FillMode.NONE};invalidate();return fillMode}
  fun fillModeName()=when(fillMode){FillMode.NONE->"Yok";FillMode.SOLID->"Dolu";FillMode.HATCH->"Taralı"}
  fun setShowAreas(v:Boolean){showAreas=v;invalidate()};fun isShowAreas()=showAreas
- fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints\n fun setShowEdgeLengths(v:Boolean){showEdgeLengths=v;invalidate()};fun isShowEdgeLengths()=showEdgeLengths
+ fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints
+ fun setShowEdgeLengths(v:Boolean){showEdgeLengths=v;invalidate()};fun isShowEdgeLengths()=showEdgeLengths
  fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
  fun setAllLayersVisible(v:Boolean){hidden.clear();if(!v)entities.map{it.layer}.distinct().forEach{hidden.add(it)};invalidate()}
  fun isLayerVisible(i:Int)=i !in hidden
@@ -60,8 +64,8 @@ class CadView(context:Context):View(context){
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxY-minY).coerceAtLeast(.001).toFloat(),(height-70f)/(maxX-minX).coerceAtLeast(.001).toFloat())}
- private fun sx(x:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
- private fun sy(y:Double)=((35f+(maxY-y).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
+ private fun sx(x:Double,y:Double)=((35f+(y-minY).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
+ private fun sy(x:Double,y:Double)=((35f+(maxX-x).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
  private fun length(p:List<NczPoint>,closed:Boolean=false):Double{if(p.size<2)return 0.0;var s=0.0;for(i in 0 until p.size-1){val a=p[i];val b=p[i+1];s+=hypot(a.x-b.x,a.y-b.y)};if(closed&&p.size>2){val a=p.last();val b=p.first();s+=hypot(a.x-b.x,a.y-b.y)};return s}
  private fun perimeter(p:List<NczPoint>)=length(p,true)
