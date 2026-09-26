@@ -134,8 +134,8 @@ class CadView(context:Context):View(context){
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
- private fun sx(x:Double,y:Double)=((35f+(y-minY).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
- private fun sy(x:Double,y:Double)=((35f+(maxX-x).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
+ private fun sx(x:Double,y:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
+ private fun sy(x:Double,y:Double)=((35f+(maxY-y).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
  private fun length(p:List<NczPoint>,closed:Boolean=false):Double{if(p.size<2)return 0.0;var s=0.0;for(i in 0 until p.size-1){val a=p[i];val b=p[i+1];s+=hypot(a.x-b.x,a.y-b.y)};if(closed&&p.size>2){val a=p.last();val b=p.first();s+=hypot(a.x-b.x,a.y-b.y)};return s}
  private fun perimeter(p:List<NczPoint>)=length(p,true)
@@ -309,7 +309,7 @@ class CadView(context:Context):View(context){
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
   parent?.requestDisallowInterceptTouchEvent(true)
-  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;val now=System.currentTimeMillis();if(snapEnabled&&!zoomWindow&&e.pointerCount==1&&(!performanceMode||now-lastSnapAt>80)){snapPoint(e.x,e.y);lastSnapAt=now}else if(!snapEnabled||zoomWindow)snapHit=null;navUpdate();postInvalidateOnAnimation()
+  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;if(!snapEnabled||zoomWindow||e.actionMasked==MotionEvent.ACTION_MOVE)snapHit=null;navUpdate()
   if(zoomWindow){
    when(e.actionMasked){
     MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
