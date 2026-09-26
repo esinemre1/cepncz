@@ -25,7 +25,8 @@ class CadView(context:Context):View(context){
  private val selectedPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;style=Paint.Style.STROKE;strokeWidth=5f}
  private var entities:List<NczEntity> = emptyList(); private var layers:List<String> = emptyList()
  private data class Meta(val e:NczEntity,val minX:Double,val maxX:Double,val minY:Double,val maxY:Double,val area:Double,val perimeter:Double,val cx:Double,val cy:Double)
- private var meta:List<Meta> = emptyList()\n private val grid=HashMap<Long,MutableList<Meta>>();private var gridSize=1.0
+ private var meta:List<Meta> = emptyList()
+ private val grid=HashMap<Long,MutableList<Meta>>();private var gridSize=1.0
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
  private var performanceMode=false
