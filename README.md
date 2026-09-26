@@ -1,12 +1,17 @@
 # CepNCZ
 
-Android üzerinde Netcad **NCZ** dosyalarını açmayı hedefleyen deneysel görüntüleyici.
+Android üzerinde Netcad NCZ dosyalarını doğrudan açmayı hedefleyen deneysel görüntüleyici.
 
-## v0.1 hedefi
+## Çalışan altyapı
 - Android dosya seçiciden NCZ açma
-- Binary veriyi okuma
-- Netcad sürüm izi / okunabilir kayıt taraması
-- CAD tarzı çizim alanı
-- Pan ve pinch-zoom
+- NCZ blok tablosunu tarama
+- Netcad sürüm ve tabaka tablosunu okuma
+- Point, Line, Polyline ve Polygon geometri çözümü
+- Gerçek koordinat extents ile fit-to-screen
+- Pan / pinch zoom
+- Objeye dokununca geometri tipi, tabaka kodu ve koordinat gösterimi
 
-> NCZ proprietary bir formattır. Geometri ayrıştırıcısı gerçek örnek dosyalarla doğrulanarak geliştirilecektir.
+## Lisans / format bilgisi
+NCZ Netcad'in proprietary çizim formatıdır. Binary format araştırmasında Jeomatik NCZ Reader projesindeki GPL-2.0-or-later format bilgisinden yararlanılmıştır. CepNCZ'nin ilgili parser çalışması bu lisans yükümlülükleri gözetilerek açık kaynak tutulmalıdır.
+
+Upstream: https://github.com/erdincunal/Jeomatik-NCZ-Reader
