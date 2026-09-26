@@ -17,10 +17,10 @@ object NczScanner {
   val entities=ArrayList<NczEntity>(); val layers=ArrayList<String>(); var version:String?=null; var p=0
   while(p+6<b.size){
    val block=u32(b,p+1)+4; val total=block+1
-   if(block<4||total>Int.MAX_VALUE||p+total>b.size){p++;continue}
+   if(block < 4L || total > Int.MAX_VALUE.toLong() || p.toLong() + total > b.size.toLong()){p++;continue}
    val type=b[p].toInt() and 255
    if(type==25 && version==null){val n=b[p+5].toInt() and 255;version=legacy(b,p+6,n)}
-   if(type==6 && p+18<=b.size){val count=(b[p+16].toInt() and 255)+((b[p+17].toInt() and 255)*256);for(i in 0 until count){val q=p+18+i*29;if(q+29>p+total)break;val n=b[q+4].toInt() and 255;val s=legacy(b,q+5,n);if(s.isNotBlank())layers.add(s)}}
+   if(type==6 && p+18<=b.size){val count=(b[p+16].toInt() and 255)+((b[p+17].toInt() and 255)*256);for(i in 0 until count){val q=p+18+i*29;if(q.toLong()+29L > p.toLong()+total)break;val n=b[q+4].toInt() and 255;val s=legacy(b,q+5,n);if(s.isNotBlank())layers.add(s)}}
    if(type==21||type==22) parseGeometry(b,p,block.toInt(),if(type==22)28 else 0,entities)
    p+=total.toInt()
   }
