@@ -51,10 +51,27 @@ class CadView(context:Context):View(context){
   fitToScreen()
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
- fun fitToScreen(){zoom=1f;ox=0f;oy=0f;invalidate()}
- private fun zoomAt(fx:Float,fy:Float,factor:Float){val old=zoom;zoom=(zoom*factor).coerceIn(.05f,maxZoom);val r=zoom/old;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;invalidate()}
- fun zoomIn(){zoomAt(width/2f,height/2f,1.8f)}
- fun zoomOut(){zoomAt(width/2f,height/2f,1f/1.8f)}
+ fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;postInvalidateOnAnimation()}
+ private fun zoomAt(fx:Float,fy:Float,factor:Float){
+  val old=zoom;val next=(zoom*factor).coerceIn(.05f,maxZoom);if(next==old)return
+  val r=next/old;zoom=next;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;postInvalidateOnAnimation()
+ }
+ fun zoomIn(){zoomAt(width/2f,height/2f,1.5f)}
+ fun zoomOut(){zoomAt(width/2f,height/2f,1f/1.5f)}
+ fun startZoomWindow(){zoomWindow=true;zoomWindowStart=null;zoomWindowNow=null;onMeasureInfo?.invoke("ZOOM PENCERE • alanı sürükle")}
+ fun cancelZoomWindow(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;invalidate()}
+ fun zoomToSelected():Boolean{
+  val e=selected?:return false;val ps=e.points;if(ps.isEmpty())return false
+  zoomToBounds(ps.minOf{it.x},ps.maxOf{it.x},ps.minOf{it.y},ps.maxOf{it.y});return true
+ }
+ private fun zoomToBounds(x0:Double,x1:Double,y0:Double,y1:Double){
+  val w=(x1-x0).coerceAtLeast(.001);val h=(y1-y0).coerceAtLeast(.001);val base=bs().coerceAtLeast(.000001f)
+  zoom=min((width*.82)/(w*base),(height*.82)/(h*base)).toFloat().coerceIn(.05f,maxZoom)
+  val cx=(x0+x1)/2.0;val cy=(y0+y1)/2.0
+  ox=width/2f-((35f+(cx-minX).toFloat()*base-width/2f)*zoom+width/2f)
+  oy=height/2f-((35f+(maxY-cy).toFloat()*base-height/2f)*zoom+height/2f)
+  postInvalidateOnAnimation()
+ }
  fun cycleFillMode():FillMode{fillMode=when(fillMode){FillMode.NONE->FillMode.SOLID;FillMode.SOLID->FillMode.HATCH;FillMode.HATCH->FillMode.NONE};invalidate();return fillMode}
  fun fillModeName()=when(fillMode){FillMode.NONE->"Yok";FillMode.SOLID->"Dolu";FillMode.HATCH->"Taralı"}
  fun setShowAreas(v:Boolean){showAreas=v;invalidate()};fun isShowAreas()=showAreas
