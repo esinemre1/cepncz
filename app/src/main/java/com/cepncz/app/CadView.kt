@@ -8,10 +8,10 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import kotlin.math.*
 
-data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x:Double,val y:Double,val area:Double,val perimeter:Double)
+data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x:Double,val y:Double,val area:Double,val perimeter:Double,val length:Double=0.0,val queryMode:String="SELECT")
 
 class CadView(context:Context):View(context){
- enum class FillMode{NONE,SOLID,HATCH}
+ enum class FillMode{NONE,SOLID,HATCH}\n enum class QueryMode{SELECT,AREA,LENGTH}
  var onSelectionChanged:((CadSelection?)->Unit)?=null
  private val line=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=2f}
  private val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL}
@@ -22,7 +22,7 @@ class CadView(context:Context):View(context){
  private data class Meta(val e:NczEntity,val minX:Double,val maxX:Double,val minY:Double,val maxY:Double,val area:Double,val perimeter:Double,val cx:Double,val cy:Double)
  private var meta:List<Meta> = emptyList()
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
- private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false
+ private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0\n private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
@@ -55,13 +55,18 @@ class CadView(context:Context):View(context){
  fun isLayerVisible(i:Int)=i !in hidden
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
  fun layerCounts():Map<Int,Int> = entities.groupingBy{it.layer}.eachCount()
+ fun setQueryMode(mode:QueryMode){queryMode=mode;clearSelection()}
+ fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxY-minY).coerceAtLeast(.001).toFloat(),(height-70f)/(maxX-minX).coerceAtLeast(.001).toFloat())}
  private fun sx(x:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
  private fun sy(y:Double)=((35f+(maxY-y).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
- private fun perimeter(p:List<NczPoint>):Double{if(p.size<2)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=hypot(a.x-b.x,a.y-b.y)};return s}
+ private fun length(p:List<NczPoint>,closed:Boolean=false):Double{if(p.size<2)return 0.0;var s=0.0;for(i in 0 until p.size-1){val a=p[i];val b=p[i+1];s+=hypot(a.x-b.x,a.y-b.y)};if(closed&&p.size>2){val a=p.last();val b=p.first();s+=hypot(a.x-b.x,a.y-b.y)};return s}
+ private fun perimeter(p:List<NczPoint>)=length(p,true)
+ private fun segmentDistance(px:Float,py:Float,ax:Float,ay:Float,bx:Float,by:Float):Double{val vx=bx-ax;val vy=by-ay;val wx=px-ax;val wy=py-ay;val vv=vx*vx+vy*vy;if(vv<=.0001f)return hypot((px-ax).toDouble(),(py-ay).toDouble());val t=((wx*vx+wy*vy)/vv).coerceIn(0f,1f);return hypot((px-(ax+t*vx)).toDouble(),(py-(ay+t*vy)).toDouble())}
+ private fun screenDistanceToEntity(x:Float,y:Float,e:NczEntity):Double{if(e.points.size<2)return e.points.minOfOrNull{hypot((sx(it.x,it.y)-x).toDouble(),(sy(it.x,it.y)-y).toDouble())}?:Double.MAX_VALUE;var best=Double.MAX_VALUE;for(i in 0 until e.points.size-1){val a=e.points[i];val b=e.points[i+1];best=min(best,segmentDistance(x,y,sx(a.x,a.y),sy(a.x,a.y),sx(b.x,b.y),sy(b.x,b.y)))};if(e.kind=="Polygon"){val a=e.points.last();val b=e.points.first();best=min(best,segmentDistance(x,y,sx(a.x,a.y),sy(a.x,a.y),sx(b.x,b.y),sy(b.x,b.y)))};return best}
  private fun path(p:List<NczPoint>,close:Boolean):Path{val q=Path();q.moveTo(sx(p[0].x,p[0].y),sy(p[0].x,p[0].y));p.drop(1).forEach{q.lineTo(sx(it.x,it.y),sy(it.x,it.y))};if(close)q.close();return q}
  private fun color(layer:Int)=palette[abs(layer)%palette.size]
 
@@ -98,32 +103,21 @@ class CadView(context:Context):View(context){
 
  private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x,p[i].y);val yi=sy(p[i].x,p[i].y);val xj=sx(p[j].x,p[j].y);val yj=sy(p[j].x,p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
  private fun selectAt(x:Float,y:Float){
-  var chosen:Meta?=meta.asReversed().firstOrNull{m->
-   m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)
-  }
-  if(chosen==null){
-   var best=Double.MAX_VALUE
-   for(m in meta){
-    if(m.e.layer in hidden||!visible(m))continue
-    for(p in m.e.points){
-     val d=hypot((sx(p.x,p.y)-x).toDouble(),(sy(p.x,p.y)-y).toDouble())
-     if(d<best&&d<45.0){best=d;chosen=m}
-    }
+  var chosen:Meta?=null
+  when(queryMode){
+   QueryMode.AREA->chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
+   QueryMode.LENGTH->{var best=35.0;for(m in meta){if(m.e.layer in hidden||!visible(m)||m.e.kind=="Text"||m.e.points.size<2)continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
+   QueryMode.SELECT->{
+    chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
+    if(chosen==null){var best=45.0;for(m in meta){if(m.e.layer in hidden||!visible(m))continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
    }
   }
   selected=chosen?.e
   onSelectionChanged?.invoke(chosen?.let{m->
    val p=m.e.points.first()
-   CadSelection(m.e.kind,m.e.layer,layerName(m.e.layer),p.x,p.y,m.area,m.perimeter)
+   val len=when(m.e.kind){"Polygon"->m.perimeter;"Circle"->2.0*Math.PI*m.e.radius;else->length(m.e.points,false)}
+   CadSelection(m.e.kind,m.e.layer,layerName(m.e.layer),p.x,p.y,m.area,m.perimeter,len,queryMode.name)
   })
   invalidate()
  }
 
- override fun onTouchEvent(e:MotionEvent):Boolean{
-  scaler.onTouchEvent(e);gesture.onTouchEvent(e)
-  if(e.pointerCount==1&&!scaler.isInProgress)when(e.actionMasked){
-   MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false}
-   MotionEvent.ACTION_MOVE->{val dx=e.x-lx;val dy=e.y-ly;if(abs(dx)+abs(dy)>5)moved=true;if(moved){ox+=dx;oy+=dy;invalidate()};lx=e.x;ly=e.y}
-  };return true
- }
-}
