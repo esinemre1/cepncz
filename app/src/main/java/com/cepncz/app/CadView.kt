@@ -31,7 +31,8 @@ class CadView(context:Context):View(context){
  private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
  private var performanceMode=false
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private var navigating=false
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var navigating=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
  private var snapHit:SnapHit?=null
  private var lastSnapAt=0L
@@ -42,9 +43,9 @@ class CadView(context:Context):View(context){
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
-  override fun onScale(d:ScaleGestureDetector):Boolean{
-   zoomAt(d.focusX,d.focusY,d.scaleFactor.coerceIn(.75f,1.33f));return true
-  }
+  override fun onScaleBegin(d:ScaleGestureDetector):Boolean{navigating=true;snapHit=null;return true}
+  override fun onScale(d:ScaleGestureDetector):Boolean{zoomAt(d.focusX,d.focusY,d.scaleFactor.coerceIn(.85f,1.18f));return true}
+  override fun onScaleEnd(d:ScaleGestureDetector){navigating=false;postInvalidateOnAnimation()}
  })
  private val gesture=GestureDetector(context,object:GestureDetector.SimpleOnGestureListener(){
   override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
@@ -328,7 +329,8 @@ class CadView(context:Context):View(context){
   if(!multiTouch&&!suppressTap)gesture.onTouchEvent(e)
   when(e.actionMasked){
    MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false;multiTouch=false;suppressTap=false;gesture.onTouchEvent(e)}
-   MotionEvent.ACTION_MOVE->if(e.pointerCount==1&&!scaler.isInProgress&&!multiTouch){\n    navigating=true;snapHit=null;
+   MotionEvent.ACTION_MOVE->if(e.pointerCount==1&&!scaler.isInProgress&&!multiTouch){
+    navigating=true;snapHit=null;
     val dx=e.x-lx;val dy=e.y-ly
     if(hypot(dx.toDouble(),dy.toDouble())>3.0){moved=true;suppressTap=true}
     if(moved){ox+=dx;oy+=dy;postInvalidateOnAnimation()}
