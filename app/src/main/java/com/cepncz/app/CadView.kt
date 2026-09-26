@@ -27,11 +27,13 @@ class CadView(context:Context):View(context){
  private data class Meta(val e:NczEntity,val minX:Double,val maxX:Double,val minY:Double,val maxY:Double,val area:Double,val perimeter:Double,val cx:Double,val cy:Double)
  private var meta:List<Meta> = emptyList()
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
- private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT\n private var performanceMode=false
+ private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
+ private var performanceMode=false
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
- private var snapHit:SnapHit?=null\n private var lastSnapAt=0L
+ private var snapHit:SnapHit?=null
+ private var lastSnapAt=0L
  private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
@@ -52,7 +54,9 @@ class CadView(context:Context):View(context){
 
  fun setEntities(v:List<NczEntity>,names:List<String> = emptyList()){
   entities=v;layers=names;hidden.clear();selected=null;bounds()
-  performanceMode=v.size>2500||v.sumOf{it.points.size}>50000\n  if(performanceMode){fillMode=FillMode.NONE;showAreas=false;showPoints=false;showEdgeLengths=false}\n  meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
+  performanceMode=v.size>2500||v.sumOf{it.points.size}>50000
+  if(performanceMode){fillMode=FillMode.NONE;showAreas=false;showPoints=false;showEdgeLengths=false}
+  meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
    Meta(e,ps.minOfOrNull{it.x}?:0.0,ps.maxOfOrNull{it.x}?:0.0,ps.minOfOrNull{it.y}?:0.0,ps.maxOfOrNull{it.y}?:0.0,ar,per,if(ps.isEmpty())0.0 else ps.sumOf{it.x}/ps.size,if(ps.isEmpty())0.0 else ps.sumOf{it.y}/ps.size)}
   fitToScreen()
  }
@@ -146,7 +150,11 @@ class CadView(context:Context):View(context){
   c.drawColor(Color.rgb(24,27,31))
   if(entities.isEmpty()){text.textSize=28f;c.drawText("NCZ dosyası açın",28f,50f,text);return}
   val detail=zoom>=0.55f
-  val labels=showAreas&&zoom>=0.8f
+  val labels=showAreas&&!performanceMode&&zoom>=0.8f
+  val allowText=!performanceMode||zoom>=2.5f
+  val allowFill=!performanceMode||zoom>=2.0f
+  line.strokeWidth=if(performanceMode)1f else 2f
+  line.isAntiAlias=!performanceMode
   for(m in meta){
    val e=m.e
    if(e.layer in hidden||e.points.isEmpty()||!visible(m))continue
