@@ -29,7 +29,9 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)\n private var snapHit:SnapHit?=null
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
+ private var snapHit:SnapHit?=null
  private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
@@ -177,6 +179,17 @@ class CadView(context:Context):View(context){
     selectedPaint.color=Color.YELLOW;selectedPaint.strokeWidth=5f
    }
   }
+  snapHit?.let{s->
+   val x=sx(s.p.x,s.p.y);val y=sy(s.p.x,s.p.y)
+   val sp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GREEN;style=Paint.Style.STROKE;strokeWidth=3f}
+   when(s.kind){
+    "KÖŞE"->c.drawRect(x-9,y-9,x+9,y+9,sp)
+    "ORTA"->{val q=Path();q.moveTo(x,y-11);q.lineTo(x+11,y+9);q.lineTo(x-11,y+9);q.close();c.drawPath(q,sp)}
+    "KESİŞİM"->{c.drawLine(x-10,y-10,x+10,y+10,sp);c.drawLine(x+10,y-10,x-10,y+10,sp)}
+    else->c.drawCircle(x,y,9f,sp)
+   }
+   val lp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GREEN;textSize=18f};c.drawText(s.kind,x+13,y-12,lp)
+  }
   if(measurePts.isNotEmpty()){
    selectedPaint.color=Color.CYAN;selectedPaint.strokeWidth=4f
    if(measurePts.size>1)c.drawPath(path(measurePts,false),selectedPaint)
@@ -265,7 +278,7 @@ class CadView(context:Context):View(context){
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
   parent?.requestDisallowInterceptTouchEvent(true)
-  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;navUpdate()
+  val wp=worldAt(e.x,e.y);lastWorldX=wp.x;lastWorldY=wp.y;if(snapEnabled&&!zoomWindow&&e.pointerCount==1)snapPoint(e.x,e.y)else snapHit=null;navUpdate();postInvalidateOnAnimation()
   if(zoomWindow){
    when(e.actionMasked){
     MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
