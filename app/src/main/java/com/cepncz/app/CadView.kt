@@ -5,7 +5,7 @@ import android.graphics.*
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.view.View
+import android.view.View\nimport android.animation.ValueAnimator\nimport android.view.animation.DecelerateInterpolator
 import kotlin.math.*
 
 data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x:Double,val y:Double,val area:Double,val perimeter:Double,val length:Double=0.0,val queryMode:String="SELECT")
@@ -14,7 +14,7 @@ class CadView(context:Context):View(context){
  enum class FillMode{NONE,SOLID,HATCH}
  enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE}
  var onSelectionChanged:((CadSelection?)->Unit)?=null
- var onMeasureInfo:((String)->Unit)?=null
+ var onMeasureInfo:((String)->Unit)?=null\n var onNavigationInfo:((String)->Unit)?=null
  private val line=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=2f}
  private val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL}
  private val hatch=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=1f}
@@ -29,7 +29,7 @@ class CadView(context:Context):View(context){
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private var zoomWindow=false;private var zoomWindowStart:NczPoint?=null;private var zoomWindowNow:NczPoint?=null
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
- private val maxZoom=5000f
+ private val maxZoom=5000f\n private var lastWorld=NczPoint?=null
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
@@ -51,10 +51,10 @@ class CadView(context:Context):View(context){
   fitToScreen()
  }
  private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
- fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;postInvalidateOnAnimation()}
- private fun zoomAt(fx:Float,fy:Float,factor:Float){
+ fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;navUpdate();postInvalidateOnAnimation()}
+ private fun navUpdate(){val p=lastWorld;onNavigationInfo?.invoke("ZOOM %.2fx%s".format(zoom,if(p==null)"" else "  •  X %.2f  Y %.2f".format(p.x,p.y)))}\n private fun zoomAt(fx:Float,fy:Float,factor:Float){
   val old=zoom;val next=(zoom*factor).coerceIn(.05f,maxZoom);if(next==old)return
-  val r=next/old;zoom=next;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;postInvalidateOnAnimation()
+  val r=next/old;zoom=next;ox=fx-(fx-ox)*r;oy=fy-(fy-oy)*r;navUpdate();postInvalidateOnAnimation()
  }
  fun zoomIn(){zoomAt(width/2f,height/2f,1.5f)}
  fun zoomOut(){zoomAt(width/2f,height/2f,1f/1.5f)}
@@ -62,7 +62,17 @@ class CadView(context:Context):View(context){
  fun cancelZoomWindow(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;invalidate()}
  fun zoomToSelected():Boolean{
   val e=selected?:return false;val ps=e.points;if(ps.isEmpty())return false
-  zoomToBounds(ps.minOf{it.x},ps.maxOf{it.x},ps.minOf{it.y},ps.maxOf{it.y});return true
+  animateToBounds(ps.minOf{it.x},ps.maxOf{it.x},ps.minOf{it.y},ps.maxOf{it.y});return true
+ }
+ private fun animateToBounds(x0:Double,x1:Double,y0:Double,y1:Double){
+  val oldZ=zoom;val oldX=ox;val oldY=oy
+  zoomToBounds(x0,x1,y0,y1);val tz=zoom;val tx=ox;val ty=oy
+  zoom=oldZ;ox=oldX;oy=oldY
+  ValueAnimator.ofFloat(0f,1f).apply{
+   duration=320;interpolator=DecelerateInterpolator()
+   addUpdateListener{v->val t=v.animatedValue as Float;zoom=oldZ+(tz-oldZ)*t;ox=oldX+(tx-oldX)*t;oy=oldY+(ty-oldY)*t;navUpdate();postInvalidateOnAnimation()}
+   start()
+  }
  }
  private fun zoomToBounds(x0:Double,x1:Double,y0:Double,y1:Double){
   val w=(x1-x0).coerceAtLeast(.001);val h=(y1-y0).coerceAtLeast(.001);val base=bs().coerceAtLeast(.000001f)
@@ -207,7 +217,7 @@ class CadView(context:Context):View(context){
  }
 
  override fun onTouchEvent(e:MotionEvent):Boolean{
-  parent?.requestDisallowInterceptTouchEvent(true)
+  parent?.requestDisallowInterceptTouchEvent(true)\n  lastWorld=worldAt(e.x,e.y);navUpdate()
   if(zoomWindow){
    when(e.actionMasked){
     MotionEvent.ACTION_DOWN->{zoomWindowStart=worldAt(e.x,e.y);zoomWindowNow=zoomWindowStart;invalidate()}
