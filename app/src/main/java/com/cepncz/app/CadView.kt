@@ -33,7 +33,8 @@ class CadView(context:Context):View(context){
   override fun onScale(d:ScaleGestureDetector):Boolean{val old=zoom;zoom=(zoom*d.scaleFactor).coerceIn(.05f,maxZoom);val r=zoom/old;ox=d.focusX-(d.focusX-ox)*r;oy=d.focusY-(d.focusY-oy)*r;invalidate();return true}
  })
  private val gesture=GestureDetector(context,object:GestureDetector.SimpleOnGestureListener(){
-  override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}\n  override fun onDown(e:MotionEvent)=true
+  override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
+  override fun onDown(e:MotionEvent)=true
   override fun onLongPress(e:MotionEvent){fitToScreen()}
   override fun onSingleTapConfirmed(e:MotionEvent):Boolean{selectAt(e.x,e.y);return true}
  })
