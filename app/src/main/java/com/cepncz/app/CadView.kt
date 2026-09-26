@@ -63,7 +63,7 @@ class CadView(context:Context):View(context){
  fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
- private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxY-minY).coerceAtLeast(.001).toFloat(),(height-70f)/(maxX-minX).coerceAtLeast(.001).toFloat())}
+ private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
  private fun sx(x:Double,y:Double)=((35f+(y-minY).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
  private fun sy(x:Double,y:Double)=((35f+(maxX-x).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
@@ -80,7 +80,7 @@ class CadView(context:Context):View(context){
  }
 
  private fun visible(m:Meta):Boolean{
-  val l=sx(m.minX,m.minY);val r=sx(m.maxX,m.maxY);val t=sy(m.maxX,m.maxY);val b=sy(m.minX,m.minY)
+  val l=sx(m.minX,m.minY);val r=sx(m.maxX,m.maxY);val t=sy(m.minX,m.maxY);val b=sy(m.maxX,m.minY)
   return r>=-80f&&l<=width+80f&&b>=-80f&&t<=height+80f
  }
  override fun onDraw(c:Canvas){
