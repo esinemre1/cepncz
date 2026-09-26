@@ -24,7 +24,7 @@ class MainActivity:AppCompatActivity(){
  private fun load(u:Uri){
   try{contentResolver.openInputStream(u)?.use{
    val r=NczScanner.scan(it.readBytes());val v=r.version?:"?"
-   cad.setEntities(r.entities)
+   cad.setEntities(r.entities,r.layers)
    val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
    info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
    AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage("Boyut: "+r.size+" bayt\nSürüm: "+v+"\nObje: "+r.objects.size+"\n\nTipler:\n"+types.take(12).joinToString("\n"){it.key+" : "+it.value}).setPositiveButton("TAMAM",null).show()
