@@ -13,7 +13,8 @@ data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x
 class CadView(context:Context):View(context){
  enum class FillMode{NONE,SOLID,HATCH}
  enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE}
- var onSelectionChanged:((CadSelection?)->Unit)?=null\n var onMeasureInfo:((String)->Unit)?=null
+ var onSelectionChanged:((CadSelection?)->Unit)?=null
+ var onMeasureInfo:((String)->Unit)?=null
  private val line=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=2f}
  private val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL}
  private val hatch=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=1f}
@@ -24,7 +25,8 @@ class CadView(context:Context):View(context){
  private var meta:List<Meta> = emptyList()
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
- private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false\n private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
@@ -60,7 +62,10 @@ class CadView(context:Context):View(context){
  fun isLayerVisible(i:Int)=i !in hidden
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
  fun layerCounts():Map<Int,Int> = entities.groupingBy{it.layer}.eachCount()
- fun setQueryMode(mode:QueryMode){queryMode=mode;measurePts.clear();clearSelection();onMeasureInfo?.invoke(queryModeName())}\n fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}\n fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}\n fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
+ fun setQueryMode(mode:QueryMode){queryMode=mode;measurePts.clear();clearSelection();onMeasureInfo?.invoke(queryModeName())}
+ fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}
+ fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}
+ fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
  fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
@@ -143,13 +148,15 @@ class CadView(context:Context):View(context){
   }
   invalidate()
  }
-\n private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x,p[i].y);val yi=sy(p[i].x,p[i].y);val xj=sx(p[j].x,p[j].y);val yj=sy(p[j].x,p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
+
+ private fun pointInPolygon(x:Float,y:Float,p:List<NczPoint>):Boolean{var inside=false;var j=p.size-1;for(i in p.indices){val xi=sx(p[i].x,p[i].y);val yi=sy(p[i].x,p[i].y);val xj=sx(p[j].x,p[j].y);val yj=sy(p[j].x,p[j].y);if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi+0.00001f)+xi)inside=!inside;j=i};return inside}
  private fun selectAt(x:Float,y:Float){
   var chosen:Meta?=null
   when(queryMode){
    QueryMode.AREA->chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
    QueryMode.LENGTH->{var best=35.0;for(m in meta){if(m.e.layer in hidden||!visible(m)||m.e.kind=="Text"||m.e.points.size<2)continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
-   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE->{}\n   QueryMode.SELECT->{
+   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE->{}
+   QueryMode.SELECT->{
     chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
     if(chosen==null){var best=45.0;for(m in meta){if(m.e.layer in hidden||!visible(m))continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
    }
