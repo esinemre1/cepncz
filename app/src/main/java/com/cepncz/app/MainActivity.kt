@@ -16,6 +16,7 @@ class MainActivity:AppCompatActivity(){
  private lateinit var cad:CadView
  private lateinit var panel:LinearLayout
  private lateinit var layerList:LinearLayout
+ private lateinit var selectionInfo:TextView
  private var layerQuery=""
  private val picker=registerForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->if(u!=null)load(u)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
@@ -27,8 +28,31 @@ class MainActivity:AppCompatActivity(){
   val layers=Button(this).apply{text="TABAKA";setOnClickListener{panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE}}
   info=TextView(this).apply{setTextColor(Color.WHITE);text="  Dosya bekleniyor";gravity=Gravity.CENTER_VERTICAL;maxLines=1}
   bar.addView(open);bar.addView(layers);bar.addView(info,LinearLayout.LayoutParams(0,dp(48),1f));root.addView(bar)
+  val tools=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(4),0,dp(4),dp(4))}
+  fun toolButton(label:String,action:()->Unit)=Button(this).apply{text=label;textSize=11f;minWidth=0;minimumWidth=0;setPadding(dp(5),0,dp(5),0);setOnClickListener{action()}}
+  tools.addView(toolButton("SIĞDIR"){cad.fitToScreen()},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("−"){cad.zoomOut()},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("+"){cad.zoomIn()},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("TARAMA"){val m=cad.cycleFillMode();Toast.makeText(this,"Tarama: "+cad.fillModeName(),Toast.LENGTH_SHORT).show()},LinearLayout.LayoutParams(0,dp(42),1f))
+  tools.addView(toolButton("ALAN"){cad.setShowAreas(!cad.isShowAreas())},LinearLayout.LayoutParams(0,dp(42),1f))
+  val tools2=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(4),0,dp(4),dp(4))}
+  tools2.addView(toolButton("ALAN SORGU"){cad.setQueryMode(CadView.QueryMode.AREA);selectionInfo.text="Kapalı alana dokun"},LinearLayout.LayoutParams(0,dp(40),1f))
+  tools2.addView(toolButton("UZUNLUK"){cad.setQueryMode(CadView.QueryMode.LENGTH);selectionInfo.text="Çizgi veya kenara dokun"},LinearLayout.LayoutParams(0,dp(40),1f))
+  tools2.addView(toolButton("SEÇ"){cad.setQueryMode(CadView.QueryMode.SELECT);selectionInfo.text="Normal seçim modu"},LinearLayout.LayoutParams(0,dp(40),.75f))
+  selectionInfo=TextView(this).apply{setTextColor(Color.WHITE);textSize=12f;text="Objeye dokun: bilgi burada gösterilir";setPadding(dp(8),0,dp(6),0);gravity=Gravity.CENTER_VERTICAL;maxLines=2}
+  tools2.addView(selectionInfo,LinearLayout.LayoutParams(0,dp(48),2.1f))
+  root.addView(tools2)
+  root.addView(tools)
   val workspace=FrameLayout(this)
-  cad=CadView(this);workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
+  cad=CadView(this)
+  cad.onSelectionChanged={s->selectionInfo.text=when{
+   s==null->"Seçim yok"
+   s.queryMode=="AREA"&&s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
+   s.queryMode=="LENGTH"->s.layerName+" • Uzunluk %.2f m".format(s.length)
+   s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
+   else->s.layerName+" • "+s.kind+" • X %.3f Y %.3f".format(s.x,s.y)
+  }}
+  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
   panel=buildLayerPanel();workspace.addView(panel,FrameLayout.LayoutParams(dp(310),-1,Gravity.END))
   root.addView(workspace,LinearLayout.LayoutParams(-1,0,1f));setContentView(root)
  }
