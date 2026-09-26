@@ -22,7 +22,7 @@ class CadView(context:Context):View(context){
  private data class Meta(val e:NczEntity,val minX:Double,val maxX:Double,val minY:Double,val maxY:Double,val area:Double,val perimeter:Double,val cx:Double,val cy:Double)
  private var meta:List<Meta> = emptyList()
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
- private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var queryMode=QueryMode.SELECT
+ private var fillMode=FillMode.HATCH; private var showAreas=true; private var showPoints=false; private var showEdgeLengths=true; private var queryMode=QueryMode.SELECT
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0\n private val maxZoom=5000f
  private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
@@ -49,7 +49,7 @@ class CadView(context:Context):View(context){
  fun cycleFillMode():FillMode{fillMode=when(fillMode){FillMode.NONE->FillMode.SOLID;FillMode.SOLID->FillMode.HATCH;FillMode.HATCH->FillMode.NONE};invalidate();return fillMode}
  fun fillModeName()=when(fillMode){FillMode.NONE->"Yok";FillMode.SOLID->"Dolu";FillMode.HATCH->"Taralı"}
  fun setShowAreas(v:Boolean){showAreas=v;invalidate()};fun isShowAreas()=showAreas
- fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints
+ fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints\n fun setShowEdgeLengths(v:Boolean){showEdgeLengths=v;invalidate()};fun isShowEdgeLengths()=showEdgeLengths
  fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
  fun setAllLayersVisible(v:Boolean){hidden.clear();if(!v)entities.map{it.layer}.distinct().forEach{hidden.add(it)};invalidate()}
  fun isLayerVisible(i:Int)=i !in hidden
@@ -97,7 +97,14 @@ class CadView(context:Context):View(context){
     else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false),line)}
    }
    if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x,it.y),sy(it.x,it.y),4f,line)}
-   if(e===selected){when{e.kind=="Polygon"->c.drawPath(path(e.points,true),selectedPaint);e.points.size>1->c.drawPath(path(e.points,false),selectedPaint);else->c.drawCircle(sx(e.points[0].x,e.points[0].y),sy(e.points[0].x,e.points[0].y),12f,selectedPaint)}}
+   if(e===selected){
+    when{e.kind=="Polygon"->c.drawPath(path(e.points,true),selectedPaint);e.points.size>1->c.drawPath(path(e.points,false),selectedPaint);else->c.drawCircle(sx(e.points[0].x,e.points[0].y),sy(e.points[0].x,e.points[0].y),12f,selectedPaint)}
+    if(showEdgeLengths&&zoom>=1.4f&&e.kind=="Polygon"&&e.points.size in 2..120){
+     text.textSize=19f;text.color=Color.YELLOW
+     for(i in e.points.indices){val a=e.points[i];val b=e.points[(i+1)%e.points.size];val len=hypot(a.x-b.x,a.y-b.y);val mx=(a.x+b.x)/2.0;val my=(a.y+b.y)/2.0;c.drawText("%.2f m".format(len),sx(mx,my),sy(mx,my),text)}
+     text.color=Color.WHITE
+    }
+   }
   }
  }
 
