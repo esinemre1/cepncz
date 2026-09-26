@@ -110,6 +110,22 @@ class CadView(context:Context):View(context){
  private fun path(p:List<NczPoint>,close:Boolean):Path{val q=Path();q.moveTo(sx(p[0].x,p[0].y),sy(p[0].x,p[0].y));p.drop(1).forEach{q.lineTo(sx(it.x,it.y),sy(it.x,it.y))};if(close)q.close();return q}
  private fun color(layer:Int)=palette[abs(layer)%palette.size]
 
+ private fun drawScaleBar(c:Canvas){
+  if(width<100||height<100)return
+  val metersPerPx=1.0/(bs().coerceAtLeast(.000001f)*zoom)
+  val target=metersPerPx*120.0
+  val pow10=10.0.pow(floor(log10(target.coerceAtLeast(.000001))))
+  val n=target/pow10
+  val nice=(if(n<2)1.0 else if(n<5)2.0 else if(n<10)5.0 else 10.0)*pow10
+  val px=(nice/metersPerPx).toFloat()
+  val y=height-54f;val x=18f
+  val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.WHITE;strokeWidth=3f;style=Paint.Style.STROKE}
+  c.drawLine(x,y,x+px,y,p);c.drawLine(x,y-6,x,y+6,p);c.drawLine(x+px,y-6,x+px,y+6,p)
+  val tp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.WHITE;textSize=22f}
+  val label=if(nice>=1000)"%.1f km".format(nice/1000.0) else if(nice>=1)"%.0f m".format(nice) else "%.2f m".format(nice)
+  c.drawText(label,x,y-10,tp)
+ }
+
  private fun hatchPolygon(c:Canvas,p:Path){
   c.save();c.clipPath(p);hatch.color=Color.argb(130,255,190,70)
   val step=18f;var x=-height.toFloat();while(x<width+height){c.drawLine(x,0f,x+height,height.toFloat(),hatch);x+=step};c.restore()
