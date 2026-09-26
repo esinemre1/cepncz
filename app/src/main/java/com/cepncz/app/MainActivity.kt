@@ -54,7 +54,7 @@ class MainActivity:AppCompatActivity(){
    val sw=Switch(this).apply{isChecked=cad.isLayerVisible(code);setOnCheckedChangeListener{_,on->cad.setLayerVisible(code,on)}}
    val label=TextView(this).apply{text=name;setTextColor(Color.WHITE);textSize=14f;maxLines=1}
    val badge=TextView(this).apply{text=count.toString();setTextColor(Color.LTGRAY);gravity=Gravity.CENTER}
-   row.addView(sw,LinearLayout.LayoutParams(dp(52),dp(44)));row.addView(label,LinearLayout.LayoutParams(0,dp(44),1f));row.addView(badge,LinearLayout.LayoutParams(dp(48),dp(44)));layerList.addView(row)
+   row.setOnClickListener{sw.isChecked=!sw.isChecked};row.addView(sw,LinearLayout.LayoutParams(dp(52),dp(44)));row.addView(label,LinearLayout.LayoutParams(0,dp(44),1f));row.addView(badge,LinearLayout.LayoutParams(dp(48),dp(44)));layerList.addView(row)
   }
  }
  private fun load(u:Uri){
