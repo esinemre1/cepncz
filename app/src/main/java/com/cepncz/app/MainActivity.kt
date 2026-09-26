@@ -30,21 +30,21 @@ class MainActivity:AppCompatActivity(){
    val p=PopupMenu(this,anchor);items.forEachIndexed{i,it->p.menu.add(0,i,i,it.first)}
    p.setOnMenuItemClickListener{m->items[m.itemId].second();true};p.show()
   }
-  val fileBtn=toolButton("DOSYA"){v->}
+  val fileBtn=toolButton("DOSYA"){}
   fileBtn.setOnClickListener{v->popup(v,listOf("NCZ AÇ" to {picker.launch(arrayOf("*/*"))},"TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE}))}
-  val viewBtn=toolButton("GÖRÜNÜM"){v->}
+  val viewBtn=toolButton("GÖRÜNÜM"){}
   viewBtn.setOnClickListener{v->popup(v,listOf(
    "TÜMÜNÜ SIĞDIR" to {cad.fitToScreen()},"YAKINLAŞTIR +" to {cad.zoomIn()},"UZAKLAŞTIR −" to {cad.zoomOut()},
    "PENCERE ZOOM" to {cad.startZoomWindow()},"SEÇİME ZOOM" to {if(!cad.zoomToSelected())Toast.makeText(this,"Önce obje seç",Toast.LENGTH_SHORT).show()},
    "TARAMA / DOLGU" to {cad.cycleFillMode()},"ALAN YAZILARI" to {cad.setShowAreas(!cad.isShowAreas())}
   ))}
-  val queryBtn=toolButton("SORGU"){v->}
+  val queryBtn=toolButton("SORGU"){}
   queryBtn.setOnClickListener{v->popup(v,listOf(
    "SEÇİM" to {cad.setQueryMode(CadView.QueryMode.SELECT)},"ALAN SORGU" to {cad.setQueryMode(CadView.QueryMode.AREA)},
    "UZUNLUK" to {cad.setQueryMode(CadView.QueryMode.LENGTH)},"2 NOKTA" to {cad.setQueryMode(CadView.QueryMode.DISTANCE)},
    "KIRIK HAT" to {cad.setQueryMode(CadView.QueryMode.POLYLINE)},"XY SORGU" to {cad.setQueryMode(CadView.QueryMode.COORDINATE)}
   ))}
-  val cadBtn=toolButton("CAD"){v->}
+  val cadBtn=toolButton("CAD"){}
   cadBtn.setOnClickListener{v->popup(v,listOf(
    "SNAP AÇ / KAPAT" to {cad.toggleSnap()},"ÖLÇÜM GERİ" to {cad.undoMeasure()},"ÖLÇÜM TEMİZLE" to {cad.clearMeasure()}
   ))}
@@ -62,7 +62,7 @@ class MainActivity:AppCompatActivity(){
    s.area>0.0->s.layerName+" • Alan %.2f m² • Çevre %.2f m".format(s.area,s.perimeter)
    else->s.layerName+" • "+s.kind+" • X %.3f Y %.3f".format(s.x,s.y)
   }}
-  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))
+  workspace.addView(cad,FrameLayout.LayoutParams(-1,-1))\n  workspace.addView(selectionInfo,FrameLayout.LayoutParams(-1,dp(34),Gravity.BOTTOM).apply{setMargins(dp(8),0,dp(8),dp(44))})
   val navHud=TextView(this).apply{
    setTextColor(Color.WHITE);setBackgroundColor(Color.argb(175,20,23,27));textSize=11f
    text="ZOOM 1.00x";setPadding(dp(10),dp(5),dp(10),dp(5));gravity=Gravity.CENTER
