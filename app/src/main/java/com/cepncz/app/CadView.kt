@@ -33,7 +33,7 @@ class CadView(context:Context):View(context){
  private var performanceMode=false
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
+ private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()\n private val savedPoints=mutableListOf<NczPoint>()
  private var navigating=false
  private var pendingInitialFit=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
@@ -117,7 +117,7 @@ class CadView(context:Context):View(context){
  fun setQueryMode(mode:QueryMode){queryMode=mode;measurePts.clear();clearSelection();onMeasureInfo?.invoke(queryModeName())}
  fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}
  fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}
- fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
+ fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}\n fun savedPointList():List<NczPoint> = savedPoints.toList()\n fun saveCurrentPoint():NczPoint?{\n  val p=measurePts.lastOrNull()?:if(lastWorldX!=null&&lastWorldY!=null)NczPoint(lastWorldX!!,lastWorldY!!)else null\n  if(p!=null){savedPoints.add(p);invalidate();onMeasureInfo?.invoke("N${savedPoints.size} • Y %.3f • X %.3f".format(p.y,p.x))}\n  return p\n }\n fun removeSavedPoint(index:Int){if(index in savedPoints.indices){savedPoints.removeAt(index);invalidate()}}\n fun clearSavedPoints(){savedPoints.clear();invalidate()}\n fun zoomToSavedPoint(index:Int):Boolean{\n  val p=savedPoints.getOrNull(index)?:return false\n  val span=max(maxX-minX,maxY-minY).coerceAtLeast(1.0)/40.0\n  animateToBounds(p.x-span,p.x+span,p.y-span,p.y+span);return true\n }
  fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
@@ -203,7 +203,7 @@ class CadView(context:Context):View(context){
     }
    }
   }
-  if(zoomWindow){
+  if(savedPoints.isNotEmpty()){\n   val pp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;style=Paint.Style.STROKE;strokeWidth=3f}\n   val pt=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;textSize=18f}\n   savedPoints.forEachIndexed{i,p->val x=sx(p.x,p.y);val y=sy(p.x,p.y);c.drawCircle(x,y,7f,pp);c.drawLine(x-10,y,x+10,y,pp);c.drawLine(x,y-10,x,y+10,pp);c.drawText("N"+(i+1),x+9,y-9,pt)}\n  }\n  if(zoomWindow){
    val a=zoomWindowStart;val b=zoomWindowNow
    if(a!=null&&b!=null){
     selectedPaint.color=Color.MAGENTA;selectedPaint.strokeWidth=3f
