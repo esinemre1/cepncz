@@ -23,35 +23,39 @@ class MainActivity:AppCompatActivity(){
  override fun onCreate(b:Bundle?){
   super.onCreate(b)
   val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(Color.rgb(22,25,29))}
-  fun toolButton(label:String,action:()->Unit)=Button(this).apply{text=label;textSize=11f;minWidth=0;minimumWidth=0;setPadding(dp(5),0,dp(5),0);setOnClickListener{action()}}
-  selectionInfo=TextView(this).apply{setTextColor(Color.LTGRAY);textSize=11f;text="Hazır";setPadding(dp(10),0,dp(8),0);gravity=Gravity.CENTER_VERTICAL;maxLines=1}
-  val menuBar=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(4),dp(3),dp(4),dp(3));setBackgroundColor(Color.rgb(31,35,40))}
+  fun menuButton(label:String)=Button(this).apply{
+   text=label;textSize=12f;minWidth=0;minimumWidth=0;setTextColor(Color.WHITE);setBackgroundColor(Color.rgb(42,47,53));setPadding(dp(8),0,dp(8),0)
+  }
+  selectionInfo=TextView(this).apply{setTextColor(Color.WHITE);textSize=11f;text="Hazır";setPadding(dp(10),0,dp(8),0);gravity=Gravity.CENTER_VERTICAL;maxLines=1;setBackgroundColor(Color.argb(190,28,32,36))}
   fun popup(anchor:View,items:List<Pair<String,()->Unit>>){
    val p=PopupMenu(this,anchor);items.forEachIndexed{i,it->p.menu.add(0,i,i,it.first)}
    p.setOnMenuItemClickListener{m->items[m.itemId].second();true};p.show()
   }
-  val fileBtn=toolButton("DOSYA"){}
-  fileBtn.setOnClickListener{v->popup(v,listOf("NCZ AÇ" to {picker.launch(arrayOf("*/*"))},"TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE}))}
-  val viewBtn=toolButton("GÖRÜNÜM"){}
-  viewBtn.setOnClickListener{v->popup(v,listOf(
-   "TÜMÜNÜ SIĞDIR" to {cad.fitToScreen()},"YAKINLAŞTIR +" to {cad.zoomIn()},"UZAKLAŞTIR −" to {cad.zoomOut()},
-   "PENCERE ZOOM" to {cad.startZoomWindow()},"SEÇİME ZOOM" to {if(!cad.zoomToSelected())Toast.makeText(this,"Önce obje seç",Toast.LENGTH_SHORT).show()},
-   "TARAMA / DOLGU" to {cad.cycleFillMode()},"ALAN YAZILARI" to {cad.setShowAreas(!cad.isShowAreas())}
+  val header=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(8),dp(5),dp(8),dp(5));setBackgroundColor(Color.rgb(27,31,36))}
+  val brand=TextView(this).apply{text="CepNCZ";textSize=18f;setTextColor(Color.WHITE);gravity=Gravity.CENTER_VERTICAL}
+  info=TextView(this).apply{setTextColor(Color.LTGRAY);text="Dosya bekleniyor";textSize=10f;gravity=Gravity.CENTER_VERTICAL or Gravity.END;maxLines=1}
+  header.addView(brand,LinearLayout.LayoutParams(dp(90),dp(42)));header.addView(info,LinearLayout.LayoutParams(0,dp(42),1f));root.addView(header)
+  val menuScroll=HorizontalScrollView(this).apply{isHorizontalScrollBarEnabled=false;setBackgroundColor(Color.rgb(34,38,43))}
+  val menuBar=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(6),dp(4),dp(6),dp(4))}
+  val fileBtn=menuButton("DOSYA");fileBtn.setOnClickListener{v->popup(v,listOf("NCZ AÇ" to {picker.launch(arrayOf("*/*"))},"TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE}))}
+  val viewBtn=menuButton("GÖRÜNÜM");viewBtn.setOnClickListener{v->popup(v,listOf(
+   "TÜMÜNÜ SIĞDIR" to {cad.fitToScreen()},"YAKINLAŞTIR +" to {cad.zoomIn()},"UZAKLAŞTIR −" to {cad.zoomOut()},"PENCERE ZOOM" to {cad.startZoomWindow()},
+   "SEÇİME ZOOM" to {if(!cad.zoomToSelected())Toast.makeText(this,"Önce obje seç",Toast.LENGTH_SHORT).show()},"TARAMA / DOLGU" to {cad.cycleFillMode()},"ALAN YAZILARI" to {cad.setShowAreas(!cad.isShowAreas())}
   ))}
-  val queryBtn=toolButton("SORGU"){}
-  queryBtn.setOnClickListener{v->popup(v,listOf(
-   "SEÇİM" to {cad.setQueryMode(CadView.QueryMode.SELECT)},"ALAN SORGU" to {cad.setQueryMode(CadView.QueryMode.AREA)},
-   "UZUNLUK" to {cad.setQueryMode(CadView.QueryMode.LENGTH)},"2 NOKTA" to {cad.setQueryMode(CadView.QueryMode.DISTANCE)},
-   "KIRIK HAT" to {cad.setQueryMode(CadView.QueryMode.POLYLINE)},"XY SORGU" to {cad.setQueryMode(CadView.QueryMode.COORDINATE)}
+  val queryBtn=menuButton("SORGU");queryBtn.setOnClickListener{v->popup(v,listOf(
+   "SEÇİM" to {cad.setQueryMode(CadView.QueryMode.SELECT)},"ALAN SORGU" to {cad.setQueryMode(CadView.QueryMode.AREA)},"UZUNLUK" to {cad.setQueryMode(CadView.QueryMode.LENGTH)},
+   "XY SORGU" to {cad.setQueryMode(CadView.QueryMode.COORDINATE)}
   ))}
-  val cadBtn=toolButton("CAD"){}
-  cadBtn.setOnClickListener{v->popup(v,listOf(
-   "SNAP AÇ / KAPAT" to {cad.toggleSnap()},"ÖLÇÜM GERİ" to {cad.undoMeasure()},"ÖLÇÜM TEMİZLE" to {cad.clearMeasure()}
+  val measureBtn=menuButton("ÖLÇÜM");measureBtn.setOnClickListener{v->popup(v,listOf(
+   "2 NOKTA MESAFE" to {cad.setQueryMode(CadView.QueryMode.DISTANCE)},"KIRIK HAT" to {cad.setQueryMode(CadView.QueryMode.POLYLINE)},
+   "GERİ AL" to {cad.undoMeasure()},"TEMİZLE" to {cad.clearMeasure()}
   ))}
-  info=TextView(this).apply{setTextColor(Color.WHITE);text="Dosya bekleniyor";textSize=11f;gravity=Gravity.CENTER_VERTICAL;maxLines=1}
-  menuBar.addView(fileBtn,LinearLayout.LayoutParams(dp(78),dp(42)));menuBar.addView(viewBtn,LinearLayout.LayoutParams(dp(92),dp(42)))
-  menuBar.addView(queryBtn,LinearLayout.LayoutParams(dp(78),dp(42)));menuBar.addView(cadBtn,LinearLayout.LayoutParams(dp(66),dp(42)))
-  menuBar.addView(info,LinearLayout.LayoutParams(0,dp(42),1f));root.addView(menuBar)
+  val cadBtn=menuButton("CAD");cadBtn.setOnClickListener{v->popup(v,listOf(
+   "SNAP AÇ / KAPAT" to {val on=cad.toggleSnap();Toast.makeText(this,if(on)"SNAP açık" else "SNAP kapalı",Toast.LENGTH_SHORT).show()},
+   "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
+  ))}
+  listOf(fileBtn,viewBtn,queryBtn,measureBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
+  menuScroll.addView(menuBar);root.addView(menuScroll,LinearLayout.LayoutParams(-1,dp(50)))
   val workspace=FrameLayout(this)
   cad=CadView(this)
   cad.onMeasureInfo={msg->selectionInfo.text=msg}
