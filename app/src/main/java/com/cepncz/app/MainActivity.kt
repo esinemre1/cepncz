@@ -56,7 +56,11 @@ class MainActivity:AppCompatActivity(){
    "SNAP AÇ / KAPAT" to {val on=cad.toggleSnap();Toast.makeText(this,if(on)"SNAP açık" else "SNAP kapalı",Toast.LENGTH_SHORT).show()},
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
-  val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(\n   "NOKTA KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce ekranda bir konum seç",Toast.LENGTH_SHORT).show()},\n   "NOKTA LİSTESİ" to {showPointList()},"TÜM NOKTALARI TEMİZLE" to {cad.clearSavedPoints();Toast.makeText(this,"Nokta listesi temizlendi",Toast.LENGTH_SHORT).show()}\n  ))}\n  listOf(fileBtn,viewBtn,queryBtn,measureBtn,pointBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
+  val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
+   "NOKTA KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce ekranda bir konum seç",Toast.LENGTH_SHORT).show()},
+   "NOKTA LİSTESİ" to {showPointList()},"TÜM NOKTALARI TEMİZLE" to {cad.clearSavedPoints();Toast.makeText(this,"Nokta listesi temizlendi",Toast.LENGTH_SHORT).show()}
+  ))}
+  listOf(fileBtn,viewBtn,queryBtn,measureBtn,pointBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
   menuScroll.addView(menuBar);root.addView(menuScroll,LinearLayout.LayoutParams(-1,dp(50)))
   val workspace=FrameLayout(this)
   cad=CadView(this)
@@ -115,7 +119,16 @@ class MainActivity:AppCompatActivity(){
    row.setOnClickListener{sw.isChecked=!sw.isChecked};row.addView(sw,LinearLayout.LayoutParams(dp(52),dp(44)));row.addView(label,LinearLayout.LayoutParams(0,dp(44),1f));row.addView(badge,LinearLayout.LayoutParams(dp(48),dp(44)));layerList.addView(row)
   }
  }
- private fun showPointList(){\n  val pts=cad.savedPointList()\n  if(pts.isEmpty()){Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show();return}\n  val labels=pts.mapIndexed{i,p->"N"+(i+1)+"   Y %.3f   X %.3f".format(p.y,p.x)}.toTypedArray()\n  AlertDialog.Builder(this).setTitle("NOKTA LİSTESİ • "+pts.size)\n   .setItems(labels){_,which->cad.zoomToSavedPoint(which)}\n   .setNeutralButton("SON NOKTAYI SİL"){_,_->cad.removeSavedPoint(pts.lastIndex)}\n   .setNegativeButton("KAPAT",null).show()\n }\n private fun load(u:Uri){
+ private fun showPointList(){
+  val pts=cad.savedPointList()
+  if(pts.isEmpty()){Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show();return}
+  val labels=pts.mapIndexed{i,p->"N"+(i+1)+"   Y %.3f   X %.3f".format(p.y,p.x)}.toTypedArray()
+  AlertDialog.Builder(this).setTitle("NOKTA LİSTESİ • "+pts.size)
+   .setItems(labels){_,which->cad.zoomToSavedPoint(which)}
+   .setNeutralButton("SON NOKTAYI SİL"){_,_->cad.removeSavedPoint(pts.lastIndex)}
+   .setNegativeButton("KAPAT",null).show()
+ }
+ private fun load(u:Uri){
   info.text="NCZ okunuyor…"
   selectionInfo.text="Dosya hazırlanıyor…"
   ioExecutor.execute{
