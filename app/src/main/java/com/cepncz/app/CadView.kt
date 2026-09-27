@@ -34,7 +34,8 @@ class CadView(context:Context):View(context){
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
- private var navigating=false\n private var pendingInitialFit=false
+ private var navigating=false
+ private var pendingInitialFit=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
  private var snapHit:SnapHit?=null
  private var lastSnapAt=0L
@@ -233,11 +234,11 @@ class CadView(context:Context):View(context){
 
  private fun worldAt(px:Float,py:Float):NczPoint{
   val s=bs().coerceAtLeast(.000001f)
-  val x=minX+((px-width/2f-ox)/zoom+width/2f-35f)/s
-  val y=maxY-((py-height/2f-oy)/zoom+height/2f-35f)/s
+  val cx=(minX+maxX)/2.0;val cy=(minY+maxY)/2.0
+  val x=cx+(px-width/2f-ox)/(s*zoom)
+  val y=cy-(py-height/2f-oy)/(s*zoom)
   return NczPoint(x,y)
- }
- private fun screenDist(p:NczPoint,px:Float,py:Float)=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble())
+ }\n private fun screenDist(p:NczPoint,px:Float,py:Float)=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble())
  private fun nearestOnSegment(p:NczPoint,a:NczPoint,b:NczPoint):NczPoint{
   val vx=b.x-a.x;val vy=b.y-a.y;val l2=vx*vx+vy*vy;if(l2<1e-18)return a
   val t=(((p.x-a.x)*vx+(p.y-a.y)*vy)/l2).coerceIn(0.0,1.0);return NczPoint(a.x+t*vx,a.y+t*vy)
