@@ -219,7 +219,8 @@ class CadView(context:Context):View(context){
    when(s.kind){
     "KÖŞE"->c.drawRect(x-9,y-9,x+9,y+9,sp)
     "ORTA"->{val q=Path();q.moveTo(x,y-11);q.lineTo(x+11,y+9);q.lineTo(x-11,y+9);q.close();c.drawPath(q,sp)}
-    "KESİŞİM"->{c.drawLine(x-10,y-10,x+10,y+10,sp);c.drawLine(x+10,y-10,x-10,y+10,sp)}\n    "DİK"->{c.drawLine(x-10,y+9,x+9,y+9,sp);c.drawLine(x+9,y+9,x+9,y-10,sp);c.drawLine(x+2,y+2,x+9,y+2,sp)}
+    "KESİŞİM"->{c.drawLine(x-10,y-10,x+10,y+10,sp);c.drawLine(x+10,y-10,x-10,y+10,sp)}
+    "DİK"->{c.drawLine(x-10,y+9,x+9,y+9,sp);c.drawLine(x+9,y+9,x+9,y-10,sp);c.drawLine(x+2,y+2,x+9,y+2,sp)}
     else->c.drawCircle(x,y,9f,sp)
    }
    val lp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GREEN;textSize=18f};c.drawText(s.kind,x+13,y-12,lp)
