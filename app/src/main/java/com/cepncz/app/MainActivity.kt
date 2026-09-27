@@ -9,7 +9,8 @@ import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity\nimport java.util.concurrent.Executors
+import androidx.appcompat.app.AppCompatActivity
+import java.util.concurrent.Executors
 
 class MainActivity:AppCompatActivity(){
  private lateinit var info:TextView
@@ -17,7 +18,8 @@ class MainActivity:AppCompatActivity(){
  private lateinit var panel:LinearLayout
  private lateinit var layerList:LinearLayout
  private lateinit var selectionInfo:TextView
- private var layerQuery=""\n private val ioExecutor=Executors.newSingleThreadExecutor()
+ private var layerQuery=""
+ private val ioExecutor=Executors.newSingleThreadExecutor()
  private val picker=registerForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->if(u!=null)load(u)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
  override fun onCreate(b:Bundle?){
@@ -139,4 +141,4 @@ class MainActivity:AppCompatActivity(){
   }
  }
  override fun onDestroy(){ioExecutor.shutdownNow();super.onDestroy()}
-}\n
+}
