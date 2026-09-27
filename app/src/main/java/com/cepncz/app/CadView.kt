@@ -129,7 +129,21 @@ class CadView(context:Context):View(context){
  private fun perimeter(p:List<NczPoint>)=length(p,true)
  private fun segmentDistance(px:Float,py:Float,ax:Float,ay:Float,bx:Float,by:Float):Double{val vx=bx-ax;val vy=by-ay;val wx=px-ax;val wy=py-ay;val vv=vx*vx+vy*vy;if(vv<=.0001f)return hypot((px-ax).toDouble(),(py-ay).toDouble());val t=((wx*vx+wy*vy)/vv).coerceIn(0f,1f);return hypot((px-(ax+t*vx)).toDouble(),(py-(ay+t*vy)).toDouble())}
  private fun screenDistanceToEntity(x:Float,y:Float,e:NczEntity):Double{if(e.points.size<2)return e.points.minOfOrNull{hypot((sx(it.x,it.y)-x).toDouble(),(sy(it.x,it.y)-y).toDouble())}?:Double.MAX_VALUE;var best=Double.MAX_VALUE;for(i in 0 until e.points.size-1){val a=e.points[i];val b=e.points[i+1];best=min(best,segmentDistance(x,y,sx(a.x,a.y),sy(a.x,a.y),sx(b.x,b.y),sy(b.x,b.y)))};if(e.kind=="Polygon"){val a=e.points.last();val b=e.points.first();best=min(best,segmentDistance(x,y,sx(a.x,a.y),sy(a.x,a.y),sx(b.x,b.y),sy(b.x,b.y)))};return best}
- private fun path(p:List<NczPoint>,close:Boolean):Path{val q=Path();q.moveTo(sx(p[0].x,p[0].y),sy(p[0].x,p[0].y));p.drop(1).forEach{q.lineTo(sx(it.x,it.y),sy(it.x,it.y))};if(close)q.close();return q}
+ private fun path(p:List<NczPoint>,close:Boolean,fast:Boolean=false):Path{
+  val q=Path();if(p.isEmpty())return q
+  q.moveTo(sx(p[0].x,p[0].y),sy(p[0].x,p[0].y))
+  val step=when{
+   !fast||p.size<300->1
+   zoom<0.5f->max(2,p.size/350)
+   zoom<1.2f->max(2,p.size/700)
+   else->max(1,p.size/1400)
+  }
+  var i=step
+  while(i<p.size){val pt=p[i];q.lineTo(sx(pt.x,pt.y),sy(pt.x,pt.y));i+=step}
+  if(p.size>1&&(p.size-1)%step!=0){val pt=p.last();q.lineTo(sx(pt.x,pt.y),sy(pt.x,pt.y))}
+  if(close)q.close()
+  return q
+ }
  private fun color(layer:Int)=palette[abs(layer)%palette.size]
 
  private fun drawScaleBar(c:Canvas){
@@ -160,10 +174,10 @@ class CadView(context:Context):View(context){
  override fun onDraw(c:Canvas){
   c.drawColor(Color.rgb(24,27,31))
   if(entities.isEmpty()){text.textSize=28f;c.drawText("NCZ dosyası açın",28f,50f,text);return}
-  val detail=!performanceMode&&zoom>=0.55f
-  val labels=showAreas&&!performanceMode&&zoom>=0.8f
-  val allowText=!performanceMode||zoom>=2.5f
-  val allowFill=!performanceMode||zoom>=2.0f
+  val fastFrame=navigating||performanceMode\n  val detail=!fastFrame&&zoom>=0.55f
+  val labels=showAreas&&!fastFrame&&zoom>=0.8f
+  val allowText=!navigating&&(!performanceMode||zoom>=2.5f)
+  val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)
   line.strokeWidth=if(performanceMode)1f else 2f
   line.isAntiAlias=!performanceMode
   for(m in meta){
@@ -171,12 +185,12 @@ class CadView(context:Context):View(context){
    if(e.layer in hidden||e.points.isEmpty()||!visible(m))continue
    line.color=color(e.layer);fill.color=Color.argb(55,Color.red(line.color),Color.green(line.color),Color.blue(line.color))
    when(e.kind){
-    "Polygon"->{val p=path(e.points,true);if(allowFill)when(fillMode){FillMode.SOLID->c.drawPath(p,fill);FillMode.HATCH->hatchPolygon(c,p);else->{}};c.drawPath(p,line)
+    "Polygon"->{val p=path(e.points,true,fastFrame);if(allowFill)when(fillMode){FillMode.SOLID->c.drawPath(p,fill);FillMode.HATCH->hatchPolygon(c,p);else->{}};c.drawPath(p,line)
      if(labels&&m.area>.01){text.textSize=22f;c.drawText("%.2f m²".format(m.area),sx(m.cx,m.cy),sy(m.cx,m.cy),text)}}
     "Circle"->{val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),(e.radius*bs()*zoom).toFloat(),line)}
     "Arc"->{val p=e.points[0];val r=(e.radius*bs()*zoom).toFloat();c.drawArc(RectF(sx(p.x,p.y)-r,sy(p.x,p.y)-r,sx(p.x,p.y)+r,sy(p.x,p.y)+r),e.startAngle.toFloat(),(e.endAngle-e.startAngle).toFloat(),false,line)}
     "Text"->{if(!allowText)continue;val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(9f,44f);c.save();c.rotate((-e.rotation).toFloat(),sx(p.x,p.y),sy(p.x,p.y));c.drawText(e.text,sx(p.x,p.y),sy(p.x,p.y),text);c.restore();text.color=Color.WHITE}
-    else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false),line)}
+    else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false,fastFrame),line)}
    }
    if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x,it.y),sy(it.x,it.y),4f,line)}
    if(e===selected){
