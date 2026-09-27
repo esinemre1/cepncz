@@ -34,7 +34,7 @@ class CadView(context:Context):View(context){
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
- private var navigating=false
+ private var navigating=false\n private var pendingInitialFit=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
  private var snapHit:SnapHit?=null
  private var lastSnapAt=0L
