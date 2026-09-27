@@ -86,7 +86,11 @@ class CadView(context:Context):View(context){
   for(x in x0..x1)for(y in y0..y1)grid[gridKey(x,y)]?.let{out.addAll(it)}
   return out.toList()
  }
- private fun bounds(){val p=entities.flatMap{it.points};if(p.isNotEmpty()){minX=p.minOf{it.x};maxX=p.maxOf{it.x};minY=p.minOf{it.y};maxY=p.maxOf{it.y}}}
+ private fun bounds(){
+  var found=false;var loX=Double.POSITIVE_INFINITY;var hiX=Double.NEGATIVE_INFINITY;var loY=Double.POSITIVE_INFINITY;var hiY=Double.NEGATIVE_INFINITY
+  for(e in entities)for(p in e.points){found=true;if(p.x<loX)loX=p.x;if(p.x>hiX)hiX=p.x;if(p.y<loY)loY=p.y;if(p.y>hiY)hiY=p.y}
+  if(found){minX=loX;maxX=hiX;minY=loY;maxY=hiY}else{minX=0.0;maxX=1.0;minY=0.0;maxY=1.0}
+ }
  fun fitToScreen(){zoomWindow=false;zoomWindowStart=null;zoomWindowNow=null;zoom=1f;ox=0f;oy=0f;navUpdate();postInvalidateOnAnimation()}
  private fun navUpdate(){val x=lastWorldX;val y=lastWorldY;onNavigationInfo?.invoke("ZOOM %.2fx%s".format(zoom,if(x==null||y==null)"" else "  •  X %.2f  Y %.2f".format(x,y)))}
  private fun zoomAt(fx:Float,fy:Float,factor:Float){
