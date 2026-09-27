@@ -30,7 +30,8 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
  private var performanceMode=false
- private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false\n private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+ private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
+ private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private var navigating=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
