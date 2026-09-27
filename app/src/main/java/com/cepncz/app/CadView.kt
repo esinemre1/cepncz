@@ -63,28 +63,7 @@ class CadView(context:Context):View(context){
   if(performanceMode){fillMode=FillMode.NONE;showAreas=false;showPoints=false;showEdgeLengths=false}
   meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
    Meta(e,ps.minOfOrNull{it.x}?:0.0,ps.maxOfOrNull{it.x}?:0.0,ps.minOfOrNull{it.y}?:0.0,ps.maxOfOrNull{it.y}?:0.0,ar,per,if(ps.isEmpty())0.0 else ps.sumOf{it.x}/ps.size,if(ps.isEmpty())0.0 else ps.sumOf{it.y}/ps.size)}
-  buildGrid();fitToScreen()
- }
- private fun gridKey(x:Int,y:Int)=(x.toLong() shl 32) xor (y.toLong() and 0xffffffffL)
- private fun buildGrid(){
-  grid.clear();if(meta.isEmpty())return
-  val span=max(maxX-minX,maxY-minY).coerceAtLeast(1.0);gridSize=(span/64.0).coerceAtLeast(.01)
-  for(m in meta){
-   val x0=floor((m.minX-minX)/gridSize).toInt();val x1=floor((m.maxX-minX)/gridSize).toInt()
-   val y0=floor((m.minY-minY)/gridSize).toInt();val y1=floor((m.maxY-minY)/gridSize).toInt()
-   if((x1-x0+1)*(y1-y0+1)>64){grid.getOrPut(gridKey(-1,-1)){mutableListOf()}.add(m);continue}
-   for(x in x0..x1)for(y in y0..y1)grid.getOrPut(gridKey(x,y)){mutableListOf()}.add(m)
-  }
- }
- private fun visibleMeta():List<Meta>{
-  if(!performanceMode||grid.isEmpty()||width<=0||height<=0)return meta
-  val a=worldAt(-120f,height+120f);val b=worldAt(width+120f,-120f)
-  var x0=floor((min(a.x,b.x)-minX)/gridSize).toInt()-1;var x1=floor((max(a.x,b.x)-minX)/gridSize).toInt()+1
-  var y0=floor((min(a.y,b.y)-minY)/gridSize).toInt()-1;var y1=floor((max(a.y,b.y)-minY)/gridSize).toInt()+1
-  x0=x0.coerceIn(-2,66);x1=x1.coerceIn(-2,66);y0=y0.coerceIn(-2,66);y1=y1.coerceIn(-2,66)
-  val out=LinkedHashSet<Meta>();grid[gridKey(-1,-1)]?.let{out.addAll(it)}
-  for(x in x0..x1)for(y in y0..y1)grid[gridKey(x,y)]?.let{out.addAll(it)}
-  return out.toList()
+  pendingInitialFit=true\n  if(width>0&&height>0){fitToScreen();pendingInitialFit=false}else requestLayout()
  }
  private fun bounds(){
   var found=false;var loX=Double.POSITIVE_INFINITY;var hiX=Double.NEGATIVE_INFINITY;var loY=Double.POSITIVE_INFINITY;var hiY=Double.NEGATIVE_INFINITY
