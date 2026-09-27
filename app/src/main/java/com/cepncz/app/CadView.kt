@@ -30,7 +30,7 @@ class CadView(context:Context):View(context){
  private val hidden=mutableSetOf<Int>(); private var selected:NczEntity?=null
  private var fillMode=FillMode.NONE; private var showAreas=false; private var showPoints=false; private var showEdgeLengths=false; private var queryMode=QueryMode.SELECT
  private var performanceMode=false
- private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
+ private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false\n private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
  private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
  private var navigating=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
@@ -324,21 +324,39 @@ class CadView(context:Context):View(context){
    }
    return true
   }
-  if(e.actionMasked==MotionEvent.ACTION_POINTER_DOWN){multiTouch=true;suppressTap=true}
   scaler.onTouchEvent(e)
-  if(!multiTouch&&!suppressTap)gesture.onTouchEvent(e)
   when(e.actionMasked){
-   MotionEvent.ACTION_DOWN->{lx=e.x;ly=e.y;moved=false;multiTouch=false;suppressTap=false;gesture.onTouchEvent(e)}
-   MotionEvent.ACTION_MOVE->if(e.pointerCount==1&&!scaler.isInProgress&&!multiTouch){
-    navigating=true;snapHit=null;
-    val dx=e.x-lx;val dy=e.y-ly
-    if(hypot(dx.toDouble(),dy.toDouble())>3.0){moved=true;suppressTap=true}
-    if(moved){ox+=dx;oy+=dy;postInvalidateOnAnimation()}
-    lx=e.x;ly=e.y
+   MotionEvent.ACTION_DOWN->{
+    activePointerId=e.getPointerId(0);lx=e.x;ly=e.y;moved=false;multiTouch=false;suppressTap=false;navigating=false
+    gesture.onTouchEvent(e)
    }
-   MotionEvent.ACTION_POINTER_UP->{val keep=if(e.actionIndex==0)1 else 0;if(keep<e.pointerCount){lx=e.getX(keep);ly=e.getY(keep)};suppressTap=true}
-   MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{if(!moved&&!suppressTap)gesture.onTouchEvent(e);multiTouch=false;moved=false;suppressTap=false;navigating=false;postInvalidateOnAnimation()}
+   MotionEvent.ACTION_POINTER_DOWN->{
+    multiTouch=true;suppressTap=true;navigating=true;snapHit=null
+   }
+   MotionEvent.ACTION_MOVE->{
+    if(e.pointerCount==1&&!scaler.isInProgress&&!multiTouch){
+     val idx=e.findPointerIndex(activePointerId)
+     if(idx>=0){
+      val x=e.getX(idx);val y=e.getY(idx);val dx=x-lx;val dy=y-ly
+      if(!moved&&hypot(dx.toDouble(),dy.toDouble())>=touchSlop){moved=true;suppressTap=true;navigating=true}
+      if(moved){ox+=dx;oy+=dy;postInvalidateOnAnimation()}
+      lx=x;ly=y
+     }
+    }
+   }
+   MotionEvent.ACTION_POINTER_UP->{
+    suppressTap=true;navigating=true
+    if(e.getPointerId(e.actionIndex)==activePointerId){
+     val newIndex=if(e.actionIndex==0)1 else 0
+     if(newIndex<e.pointerCount){activePointerId=e.getPointerId(newIndex);lx=e.getX(newIndex);ly=e.getY(newIndex)}
+    }
+   }
+   MotionEvent.ACTION_UP->{
+    if(!moved&&!suppressTap)gesture.onTouchEvent(e)
+    activePointerId=MotionEvent.INVALID_POINTER_ID;multiTouch=false;moved=false;suppressTap=false;navigating=false;postInvalidateOnAnimation()
+   }
+   MotionEvent.ACTION_CANCEL->{
+    activePointerId=MotionEvent.INVALID_POINTER_ID;multiTouch=false;moved=false;suppressTap=false;navigating=false;snapHit=null;postInvalidateOnAnimation()
+   }
   }
-  return true
- }
-}
+
