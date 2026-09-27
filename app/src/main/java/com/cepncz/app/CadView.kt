@@ -174,7 +174,8 @@ class CadView(context:Context):View(context){
  override fun onDraw(c:Canvas){
   c.drawColor(Color.rgb(24,27,31))
   if(entities.isEmpty()){text.textSize=28f;c.drawText("NCZ dosyası açın",28f,50f,text);return}
-  val fastFrame=navigating||performanceMode\n  val detail=!fastFrame&&zoom>=0.55f
+  val fastFrame=navigating||performanceMode
+  val detail=!fastFrame&&zoom>=0.55f
   val labels=showAreas&&!fastFrame&&zoom>=0.8f
   val allowText=!navigating&&(!performanceMode||zoom>=2.5f)
   val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)
