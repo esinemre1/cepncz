@@ -359,5 +359,4 @@ class CadView(context:Context):View(context){
    MotionEvent.ACTION_CANCEL->{
     activePointerId=MotionEvent.INVALID_POINTER_ID;multiTouch=false;moved=false;suppressTap=false;navigating=false;snapHit=null;postInvalidateOnAnimation()
    }
-  }
-
+  }\n  return true\n }\n}\n
