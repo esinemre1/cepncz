@@ -80,11 +80,6 @@ class MainActivity:AppCompatActivity(){
   quickPad.addView(quickButton("−"){cad.zoomOut()},LinearLayout.LayoutParams(dp(52),dp(52)))
   quickPad.addView(quickButton("SIĞDIR"){cad.fitToScreen()},LinearLayout.LayoutParams(dp(52),dp(46)))
   workspace.addView(quickPad,FrameLayout.LayoutParams(dp(56),dp(154),Gravity.END or Gravity.CENTER_VERTICAL).apply{setMargins(0,0,dp(10),0)})
-  val zoomPad=LinearLayout(this).apply{visibility=View.GONE}
-  val zoomPlus=Button(this).apply{text="+";textSize=24f;minWidth=0;minimumWidth=0;setPadding(0,0,0,0);setOnClickListener{cad.zoomIn()}}
-  val zoomMinus=Button(this).apply{text="−";textSize=24f;minWidth=0;minimumWidth=0;setPadding(0,0,0,0);setOnClickListener{cad.zoomOut()}}
-  zoomPad.addView(zoomPlus,LinearLayout.LayoutParams(dp(52),dp(52)));zoomPad.addView(zoomMinus,LinearLayout.LayoutParams(dp(52),dp(52)))
-  workspace.addView(zoomPad,FrameLayout.LayoutParams(dp(56),dp(108),Gravity.END or Gravity.CENTER_VERTICAL).apply{setMargins(0,0,dp(10),0)})
   val north=TextView(this).apply{
    text="N ↑";setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER
    setBackgroundColor(Color.argb(175,20,23,27))
