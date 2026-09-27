@@ -6,6 +6,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.ViewConfiguration
 import android.animation.ValueAnimator
 import android.view.animation.DecelerateInterpolator
 import kotlin.math.*
@@ -359,4 +360,7 @@ class CadView(context:Context):View(context){
    MotionEvent.ACTION_CANCEL->{
     activePointerId=MotionEvent.INVALID_POINTER_ID;multiTouch=false;moved=false;suppressTap=false;navigating=false;snapHit=null;postInvalidateOnAnimation()
    }
-  }\n  return true\n }\n}\n
+  }
+  return true
+ }
+}
