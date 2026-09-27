@@ -9,7 +9,7 @@ import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity\nimport java.util.concurrent.Executors
 
 class MainActivity:AppCompatActivity(){
  private lateinit var info:TextView
@@ -17,7 +17,7 @@ class MainActivity:AppCompatActivity(){
  private lateinit var panel:LinearLayout
  private lateinit var layerList:LinearLayout
  private lateinit var selectionInfo:TextView
- private var layerQuery=""
+ private var layerQuery=""\n private val ioExecutor=Executors.newSingleThreadExecutor()
  private val picker=registerForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->if(u!=null)load(u)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
  override fun onCreate(b:Bundle?){
@@ -114,20 +114,29 @@ class MainActivity:AppCompatActivity(){
   }
  }
  private fun load(u:Uri){
-  try{contentResolver.openInputStream(u)?.use{
-   val r=NczScanner.scan(it.readBytes());val v=r.version?:"?"
-   cad.setEntities(r.entities,r.layers);refreshLayers()
-   val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
-   info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
-   val summary=buildString {
-    append("Boyut: ").append(r.size).append(" bayt").appendLine()
-    append("Sürüm: ").append(v).appendLine()
-    append("Geometri: ").append(r.entities.size).appendLine()
-    append("Tabaka: ").append(r.layers.size).appendLine().appendLine()
-    append("Tipler:").appendLine()
-    append(types.take(12).joinToString(separator=System.lineSeparator()){it.key+" : "+it.value})
-   }
-   AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage(summary).setPositiveButton("TAMAM",null).show()
-  }}catch(e:Exception){Toast.makeText(this,"Dosya okunamadı: "+e.message,Toast.LENGTH_LONG).show()}
+  info.text="NCZ okunuyor…"
+  selectionInfo.text="Dosya hazırlanıyor…"
+  ioExecutor.execute{
+   try{
+    val bytes=contentResolver.openInputStream(u)?.use{it.readBytes()}?:throw IllegalStateException("Dosya açılamadı")
+    val r=NczScanner.scan(bytes);val v=r.version?:"?"
+    val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
+    runOnUiThread{
+     cad.setEntities(r.entities,r.layers);refreshLayers()
+     info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
+     selectionInfo.text="Hazır • "+r.entities.size+" geometri"
+     val summary=buildString{
+      append("Boyut: ").append(r.size).append(" bayt").appendLine()
+      append("Sürüm: ").append(v).appendLine()
+      append("Geometri: ").append(r.entities.size).appendLine()
+      append("Tabaka: ").append(r.layers.size).appendLine().appendLine()
+      append("Tipler:").appendLine()
+      append(types.take(12).joinToString(separator=System.lineSeparator()){it.key+" : "+it.value})
+     }
+     AlertDialog.Builder(this).setTitle("NCZ okundu").setMessage(summary).setPositiveButton("TAMAM",null).show()
+    }
+   }catch(e:Exception){runOnUiThread{info.text="Dosya açılamadı";selectionInfo.text="Hazır";Toast.makeText(this,"Dosya okunamadı: "+e.message,Toast.LENGTH_LONG).show()}}
+  }
  }
-}
+ override fun onDestroy(){ioExecutor.shutdownNow();super.onDestroy()}
+}\n
