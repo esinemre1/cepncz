@@ -63,7 +63,8 @@ class CadView(context:Context):View(context){
   if(performanceMode){fillMode=FillMode.NONE;showAreas=false;showPoints=false;showEdgeLengths=false}
   meta=v.map{e->val ps=e.points;val ar=if(e.kind=="Polygon")area(ps)else 0.0;val per=if(e.kind=="Polygon")perimeter(ps)else 0.0
    Meta(e,ps.minOfOrNull{it.x}?:0.0,ps.maxOfOrNull{it.x}?:0.0,ps.minOfOrNull{it.y}?:0.0,ps.maxOfOrNull{it.y}?:0.0,ar,per,if(ps.isEmpty())0.0 else ps.sumOf{it.x}/ps.size,if(ps.isEmpty())0.0 else ps.sumOf{it.y}/ps.size)}
-  pendingInitialFit=true\n  if(width>0&&height>0){fitToScreen();pendingInitialFit=false}else requestLayout()
+  pendingInitialFit=true
+  if(width>0&&height>0){fitToScreen();pendingInitialFit=false}else requestLayout()
  }
  private fun bounds(){
   var found=false;var loX=Double.POSITIVE_INFINITY;var hiX=Double.NEGATIVE_INFINITY;var loY=Double.POSITIVE_INFINITY;var hiY=Double.NEGATIVE_INFINITY
