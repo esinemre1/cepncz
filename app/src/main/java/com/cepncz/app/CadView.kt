@@ -239,7 +239,8 @@ class CadView(context:Context):View(context){
   val x=cx+(px-width/2f-ox)/(s*zoom)
   val y=cy-(py-height/2f-oy)/(s*zoom)
   return NczPoint(x,y)
- }\n private fun screenDist(p:NczPoint,px:Float,py:Float)=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble())
+ }
+ private fun screenDist(p:NczPoint,px:Float,py:Float)=hypot((sx(p.x,p.y)-px).toDouble(),(sy(p.x,p.y)-py).toDouble())
  private fun nearestOnSegment(p:NczPoint,a:NczPoint,b:NczPoint):NczPoint{
   val vx=b.x-a.x;val vy=b.y-a.y;val l2=vx*vx+vy*vy;if(l2<1e-18)return a
   val t=(((p.x-a.x)*vx+(p.y-a.y)*vy)/l2).coerceIn(0.0,1.0);return NczPoint(a.x+t*vx,a.y+t*vy)
