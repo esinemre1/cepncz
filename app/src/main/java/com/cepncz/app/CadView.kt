@@ -274,8 +274,16 @@ class CadView(context:Context):View(context){
  private fun updateMeasureInfo(){
   val total=length(measurePts,false)
   onMeasureInfo?.invoke(when(queryMode){
-   QueryMode.DISTANCE->if(measurePts.size<2)"İkinci noktayı seç" else "Mesafe %.3f m".format(total)
-   QueryMode.POLYLINE->"Kırık hat • %d nokta • %.3f m".format(measurePts.size,total)
+   QueryMode.DISTANCE->if(measurePts.size<2)"İkinci noktayı seç" else{
+    val a=measurePts[0];val b=measurePts[1];val dx=b.x-a.x;val dy=b.y-a.y;val d=hypot(dx,dy)
+    var az=Math.atan2(dx,dy)*200.0/Math.PI;if(az<0)az+=400.0
+    "ΔX %.3f • ΔY %.3f • D %.3f m • Az %.4f gon".format(dx,dy,d,az)
+   }
+   QueryMode.POLYLINE->if(measurePts.size<2)"Kırık hat • %d nokta".format(measurePts.size) else{
+    val a=measurePts[measurePts.lastIndex-1];val b=measurePts.last();val dx=b.x-a.x;val dy=b.y-a.y
+    var az=Math.atan2(dx,dy)*200.0/Math.PI;if(az<0)az+=400.0
+    "Kırık hat • %d nokta • Σ %.3f m • Son %.3f m • %.4f gon".format(measurePts.size,total,hypot(dx,dy),az)
+   }
    else->queryModeName()
   })
  }
