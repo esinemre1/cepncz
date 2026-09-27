@@ -115,9 +115,10 @@ class CadView(context:Context):View(context){
   val w=(x1-x0).coerceAtLeast(.001);val h=(y1-y0).coerceAtLeast(.001);val base=bs().coerceAtLeast(.000001f)
   zoom=min((width*.82)/(w*base),(height*.82)/(h*base)).toFloat().coerceIn(.05f,maxZoom)
   val cx=(x0+x1)/2.0;val cy=(y0+y1)/2.0
-  ox=width/2f-((35f+(cx-minX).toFloat()*base-width/2f)*zoom+width/2f)
-  oy=height/2f-((35f+(maxY-cy).toFloat()*base-height/2f)*zoom+height/2f)
-  postInvalidateOnAnimation()
+  val projectCx=(minX+maxX)/2.0;val projectCy=(minY+maxY)/2.0
+  ox=-((cx-projectCx).toFloat()*base*zoom)
+  oy=((cy-projectCy).toFloat()*base*zoom)
+  navUpdate();postInvalidateOnAnimation()
  }
  fun cycleFillMode():FillMode{fillMode=when(fillMode){FillMode.NONE->FillMode.SOLID;FillMode.SOLID->FillMode.HATCH;FillMode.HATCH->FillMode.NONE};invalidate();return fillMode}
  fun fillModeName()=when(fillMode){FillMode.NONE->"Yok";FillMode.SOLID->"Dolu";FillMode.HATCH->"Taralı"}
