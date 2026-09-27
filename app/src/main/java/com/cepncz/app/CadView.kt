@@ -219,7 +219,7 @@ class CadView(context:Context):View(context){
    when(s.kind){
     "KÖŞE"->c.drawRect(x-9,y-9,x+9,y+9,sp)
     "ORTA"->{val q=Path();q.moveTo(x,y-11);q.lineTo(x+11,y+9);q.lineTo(x-11,y+9);q.close();c.drawPath(q,sp)}
-    "KESİŞİM"->{c.drawLine(x-10,y-10,x+10,y+10,sp);c.drawLine(x+10,y-10,x-10,y+10,sp)}
+    "KESİŞİM"->{c.drawLine(x-10,y-10,x+10,y+10,sp);c.drawLine(x+10,y-10,x-10,y+10,sp)}\n    "DİK"->{c.drawLine(x-10,y+9,x+9,y+9,sp);c.drawLine(x+9,y+9,x+9,y-10,sp);c.drawLine(x+2,y+2,x+9,y+2,sp)}
     else->c.drawCircle(x,y,9f,sp)
    }
    val lp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GREEN;textSize=18f};c.drawText(s.kind,x+13,y-12,lp)
@@ -263,12 +263,21 @@ class CadView(context:Context):View(context){
      val p1=e.points[i];val p2=e.points[(i+1)%e.points.size];segments.add(p1 to p2)
      val mid=NczPoint((p1.x+p2.x)/2.0,(p1.y+p2.y)/2.0);val md=screenDist(mid,px,py);if(md<=24)candidates.add(SnapHit(mid,"ORTA",md))
      val near=nearestOnSegment(raw,p1,p2);val nd=screenDist(near,px,py);if(nd<=18)candidates.add(SnapHit(near,"YAKIN",nd))
+     if(measurePts.isNotEmpty()){
+      val base=measurePts.last();val foot=nearestOnSegment(base,p1,p2)
+      val vx=p2.x-p1.x;val vy=p2.y-p1.y;val seg2=vx*vx+vy*vy
+      if(seg2>1e-12){
+       val t=((foot.x-p1.x)*vx+(foot.y-p1.y)*vy)/seg2
+       val fd=screenDist(foot,px,py)
+       if(t>=0.0&&t<=1.0&&fd<=24)candidates.add(SnapHit(foot,"DİK",fd))
+      }
+     }
     }
    }
   }
   val nearby=segments.filter{(p1,p2)->min(screenDist(p1,px,py),screenDist(p2,px,py))<100||screenDist(nearestOnSegment(raw,p1,p2),px,py)<32}.take(30)
   for(i in nearby.indices)for(j in i+1 until nearby.size){val q=intersection(nearby[i].first,nearby[i].second,nearby[j].first,nearby[j].second)?:continue;val d=screenDist(q,px,py);if(d<=24)candidates.add(SnapHit(q,"KESİŞİM",d))}
-  snapHit=candidates.minWithOrNull(compareBy<SnapHit>{when(it.kind){"KESİŞİM"->0;"KÖŞE"->1;"ORTA"->2;else->3}}.thenBy{it.distance})
+  snapHit=candidates.minWithOrNull(compareBy<SnapHit>{when(it.kind){"KESİŞİM"->0;"KÖŞE"->1;"DİK"->2;"ORTA"->3;else->4}}.thenBy{it.distance})
   return snapHit?.p?:raw
  }
  private fun updateMeasureInfo(){
