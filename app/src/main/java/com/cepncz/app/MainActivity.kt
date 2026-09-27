@@ -74,7 +74,13 @@ class MainActivity:AppCompatActivity(){
   }
   cad.onNavigationInfo={msg->navHud.text=msg}
   workspace.addView(navHud,FrameLayout.LayoutParams(-2,dp(34),Gravity.BOTTOM or Gravity.START).apply{setMargins(dp(8),0,0,dp(8))})
-  val zoomPad=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER}
+  val quickPad=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER}
+  fun quickButton(label:String,action:()->Unit)=Button(this).apply{text=label;textSize=if(label=="+"||label=="−")24f else 10f;minWidth=0;minimumWidth=0;setPadding(0,0,0,0);setOnClickListener{action()}}
+  quickPad.addView(quickButton("+"){cad.zoomIn()},LinearLayout.LayoutParams(dp(52),dp(52)))
+  quickPad.addView(quickButton("−"){cad.zoomOut()},LinearLayout.LayoutParams(dp(52),dp(52)))
+  quickPad.addView(quickButton("SIĞDIR"){cad.fitToScreen()},LinearLayout.LayoutParams(dp(52),dp(46)))
+  workspace.addView(quickPad,FrameLayout.LayoutParams(dp(56),dp(154),Gravity.END or Gravity.CENTER_VERTICAL).apply{setMargins(0,0,dp(10),0)})
+  val zoomPad=LinearLayout(this).apply{visibility=View.GONE}
   val zoomPlus=Button(this).apply{text="+";textSize=24f;minWidth=0;minimumWidth=0;setPadding(0,0,0,0);setOnClickListener{cad.zoomIn()}}
   val zoomMinus=Button(this).apply{text="−";textSize=24f;minWidth=0;minimumWidth=0;setPadding(0,0,0,0);setOnClickListener{cad.zoomOut()}}
   zoomPad.addView(zoomPlus,LinearLayout.LayoutParams(dp(52),dp(52)));zoomPad.addView(zoomMinus,LinearLayout.LayoutParams(dp(52),dp(52)))
