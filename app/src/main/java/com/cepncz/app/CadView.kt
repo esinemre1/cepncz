@@ -15,7 +15,7 @@ data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x
 
 class CadView(context:Context):View(context){
  enum class FillMode{NONE,SOLID,HATCH}
- enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE,POINT_CAPTURE}
+ enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE,POINT_CAPTURE,LENGTH_LABEL}
  var onSelectionChanged:((CadSelection?)->Unit)?=null
  var onMeasureInfo:((String)->Unit)?=null
  var onNavigationInfo:((String)->Unit)?=null
@@ -33,8 +33,8 @@ class CadView(context:Context):View(context){
  private var performanceMode=false
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
- private var snapEnabled=true;private val measurePts=mutableListOf<NczPoint>()
- private val savedPoints=mutableListOf<NczPoint>()
+ private var snapEnabled=true;private val snapKinds=mutableSetOf("KÖŞE","ORTA","KESİŞİM","DİK","YAKIN");private val measurePts=mutableListOf<NczPoint>()
+ private val savedPoints=mutableListOf<NczPoint>()\n private data class LengthLabel(val a:NczPoint,val b:NczPoint,val mid:NczPoint,val value:Double)\n private val lengthLabels=mutableListOf<LengthLabel>()
  private var navigating=false
  private var pendingInitialFit=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
@@ -55,7 +55,7 @@ class CadView(context:Context):View(context){
   override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
   override fun onDown(e:MotionEvent)=true
   override fun onLongPress(e:MotionEvent){}
-  override fun onSingleTapConfirmed(e:MotionEvent):Boolean{if(queryMode==QueryMode.POINT_CAPTURE)capturePoint(e.x,e.y) else if(queryMode==QueryMode.DISTANCE||queryMode==QueryMode.POLYLINE||queryMode==QueryMode.COORDINATE)measureTap(e.x,e.y)else selectAt(e.x,e.y);return true}
+  override fun onSingleTapConfirmed(e:MotionEvent):Boolean{if(queryMode==QueryMode.LENGTH_LABEL)lengthLabelTap(e.x,e.y) else if(queryMode==QueryMode.POINT_CAPTURE)capturePoint(e.x,e.y) else if(queryMode==QueryMode.DISTANCE||queryMode==QueryMode.POLYLINE||queryMode==QueryMode.COORDINATE)measureTap(e.x,e.y)else selectAt(e.x,e.y);return true}
  })
 
  fun setEntities(v:List<NczEntity>,names:List<String> = emptyList()){
@@ -116,7 +116,7 @@ class CadView(context:Context):View(context){
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
  fun layerCounts():Map<Int,Int> = entities.groupingBy{it.layer}.eachCount()
  fun setQueryMode(mode:QueryMode){queryMode=mode;measurePts.clear();clearSelection();onMeasureInfo?.invoke(queryModeName())}
- fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}
+ fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}\n fun isSnapKindEnabled(kind:String)=kind in snapKinds\n fun setSnapKindEnabled(kind:String,on:Boolean){if(on)snapKinds.add(kind)else snapKinds.remove(kind);invalidate()}\n fun startLengthLabelMode(){queryMode=QueryMode.LENGTH_LABEL;onMeasureInfo?.invoke("UZUNLUK YAZDIR • Bir kenara dokun");invalidate()}\n fun clearLengthLabels(){lengthLabels.clear();invalidate();onMeasureInfo?.invoke("Uzunluk yazıları temizlendi")}
  fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}
  fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
  fun savedPointList():List<NczPoint> = savedPoints.toList()
@@ -134,7 +134,7 @@ class CadView(context:Context):View(context){
   val span=max(maxX-minX,maxY-minY).coerceAtLeast(1.0)/40.0
   animateToBounds(p.x-span,p.x+span,p.y-span,p.y+span);return true
  }
- fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat";QueryMode.POINT_CAPTURE->"Nokta Yakala"}
+ fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat";QueryMode.POINT_CAPTURE->"Nokta Yakala";QueryMode.LENGTH_LABEL->"Uzunluk Yazdır"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
@@ -219,6 +219,10 @@ class CadView(context:Context):View(context){
     }
    }
   }
+  if(lengthLabels.isNotEmpty()&&!navigating){
+   val lp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;textSize=20f;textAlign=Paint.Align.CENTER}
+   lengthLabels.forEach{l->val x=sx(l.mid.x,l.mid.y);val y=sy(l.mid.x,l.mid.y);val ang=Math.toDegrees(atan2((sy(l.b.x,l.b.y)-sy(l.a.x,l.a.y)).toDouble(),(sx(l.b.x,l.b.y)-sx(l.a.x,l.a.y)).toDouble())).toFloat();c.save();c.rotate(if(ang>90||ang<-90)ang+180 else ang,x,y);c.drawText("%.2f m".format(l.value),x,y-7,lp);c.restore()}
+  }
   if(savedPoints.isNotEmpty()){
    val pp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;style=Paint.Style.STROKE;strokeWidth=3f}
    val pt=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;textSize=18f}
@@ -278,29 +282,41 @@ class CadView(context:Context):View(context){
   val candidates=ArrayList<SnapHit>();val segments=ArrayList<Pair<NczPoint,NczPoint>>()
   for(m in meta){
    val e=m.e;if(e.layer in hidden||!visible(m)||e.kind=="Text")continue
-   for(p in e.points){val d=screenDist(p,px,py);if(d<=26)candidates.add(SnapHit(p,"KÖŞE",d))}
+   for(p in e.points){val d=screenDist(p,px,py);if("KÖŞE" in snapKinds&&d<=26)candidates.add(SnapHit(p,"KÖŞE",d))}
    if(e.points.size>1){
     val n=if(e.kind=="Polygon")e.points.size else e.points.size-1
     for(i in 0 until n){
      val p1=e.points[i];val p2=e.points[(i+1)%e.points.size];segments.add(p1 to p2)
-     val mid=NczPoint((p1.x+p2.x)/2.0,(p1.y+p2.y)/2.0);val md=screenDist(mid,px,py);if(md<=24)candidates.add(SnapHit(mid,"ORTA",md))
-     val near=nearestOnSegment(raw,p1,p2);val nd=screenDist(near,px,py);if(nd<=18)candidates.add(SnapHit(near,"YAKIN",nd))
+     val mid=NczPoint((p1.x+p2.x)/2.0,(p1.y+p2.y)/2.0);val md=screenDist(mid,px,py);if("ORTA" in snapKinds&&md<=24)candidates.add(SnapHit(mid,"ORTA",md))
+     val near=nearestOnSegment(raw,p1,p2);val nd=screenDist(near,px,py);if("YAKIN" in snapKinds&&nd<=18)candidates.add(SnapHit(near,"YAKIN",nd))
      if(measurePts.isNotEmpty()){
       val base=measurePts.last();val foot=nearestOnSegment(base,p1,p2)
       val vx=p2.x-p1.x;val vy=p2.y-p1.y;val seg2=vx*vx+vy*vy
       if(seg2>1e-12){
        val t=((foot.x-p1.x)*vx+(foot.y-p1.y)*vy)/seg2
        val fd=screenDist(foot,px,py)
-       if(t>=0.0&&t<=1.0&&fd<=24)candidates.add(SnapHit(foot,"DİK",fd))
+       if("DİK" in snapKinds&&t>=0.0&&t<=1.0&&fd<=24)candidates.add(SnapHit(foot,"DİK",fd))
       }
      }
     }
    }
   }
   val nearby=segments.filter{(p1,p2)->min(screenDist(p1,px,py),screenDist(p2,px,py))<100||screenDist(nearestOnSegment(raw,p1,p2),px,py)<32}.take(30)
-  for(i in nearby.indices)for(j in i+1 until nearby.size){val q=intersection(nearby[i].first,nearby[i].second,nearby[j].first,nearby[j].second)?:continue;val d=screenDist(q,px,py);if(d<=24)candidates.add(SnapHit(q,"KESİŞİM",d))}
+  for(i in nearby.indices)for(j in i+1 until nearby.size){val q=intersection(nearby[i].first,nearby[i].second,nearby[j].first,nearby[j].second)?:continue;val d=screenDist(q,px,py);if("KESİŞİM" in snapKinds&&d<=24)candidates.add(SnapHit(q,"KESİŞİM",d))}
   snapHit=candidates.minWithOrNull(compareBy<SnapHit>{when(it.kind){"KESİŞİM"->0;"KÖŞE"->1;"DİK"->2;"ORTA"->3;else->4}}.thenBy{it.distance})
   return snapHit?.p?:raw
+ }
+ private fun lengthLabelTap(px:Float,py:Float){
+  val raw=worldAt(px,py);var best=28.0;var ba:NczPoint?=null;var bb:NczPoint?=null
+  for(m in meta){val e=m.e;if(e.layer in hidden||!visible(m)||e.kind=="Text"||e.points.size<2)continue
+   val n=if(e.kind=="Polygon")e.points.size else e.points.size-1
+   for(i in 0 until n){val a=e.points[i];val b=e.points[(i+1)%e.points.size];val q=nearestOnSegment(raw,a,b);val d=screenDist(q,px,py);if(d<best){best=d;ba=a;bb=b}}
+  }
+  val a=ba;val b=bb;if(a==null||b==null){onMeasureInfo?.invoke("Kenar bulunamadı");return}
+  val mid=NczPoint((a.x+b.x)/2.0,(a.y+b.y)/2.0);val value=hypot(a.x-b.x,a.y-b.y)
+  val existing=lengthLabels.indexOfFirst{hypot(it.mid.x-mid.x,it.mid.y-mid.y)<0.001}
+  if(existing>=0){lengthLabels.removeAt(existing);onMeasureInfo?.invoke("Uzunluk yazısı kaldırıldı")}else{lengthLabels.add(LengthLabel(a,b,mid,value));onMeasureInfo?.invoke("Uzunluk %.3f m yazdırıldı".format(value))}
+  invalidate()
  }
  private fun capturePoint(px:Float,py:Float){
   val p=snapPoint(px,py);val kind=snapHit?.kind?:"SERBEST"
@@ -341,7 +357,7 @@ class CadView(context:Context):View(context){
   when(queryMode){
    QueryMode.AREA->chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
    QueryMode.LENGTH->{var best=35.0;for(m in meta){if(m.e.layer in hidden||!visible(m)||m.e.kind=="Text"||m.e.points.size<2)continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
-   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE,QueryMode.POINT_CAPTURE->{}
+   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE,QueryMode.POINT_CAPTURE,QueryMode.LENGTH_LABEL->{}
    QueryMode.SELECT->{
     chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
     if(chosen==null){var best=45.0;for(m in meta){if(m.e.layer in hidden||!visible(m))continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
