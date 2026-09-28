@@ -50,14 +50,14 @@ class MainActivity:AppCompatActivity(){
   ))}
   val measureBtn=menuButton("ÖLÇÜM");measureBtn.setOnClickListener{v->popup(v,listOf(
    "2 NOKTA MESAFE" to {cad.setQueryMode(CadView.QueryMode.DISTANCE)},"KIRIK HAT" to {cad.setQueryMode(CadView.QueryMode.POLYLINE)},
-   "GERİ AL" to {cad.undoMeasure()},"TEMİZLE" to {cad.clearMeasure()}
+   "UZUNLUK YAZDIR" to {cad.startLengthLabelMode()},"UZUNLUK YAZILARINI SİL" to {cad.clearLengthLabels()},\n   "GERİ AL" to {cad.undoMeasure()},"TEMİZLE" to {cad.clearMeasure()}
   ))}
   val cadBtn=menuButton("CAD");cadBtn.setOnClickListener{v->popup(v,listOf(
    "SNAP AÇ / KAPAT" to {val on=cad.toggleSnap();Toast.makeText(this,if(on)"SNAP açık" else "SNAP kapalı",Toast.LENGTH_SHORT).show()},
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
   val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
-   "NOKTA YAKALA" to {cad.startPointCapture()},
+   "NOKTA YAKALA" to {cad.startPointCapture()},\n   "SNAP AYARLARI" to {showSnapSettings()},
    "SON KONUMU KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce haritada bir konuma dokun",Toast.LENGTH_SHORT).show()},
    "Y - X ELLE GİR" to {showManualPointDialog()},
    "NOKTA LİSTESİ" to {showPointList()},
@@ -122,6 +122,13 @@ class MainActivity:AppCompatActivity(){
    val badge=TextView(this).apply{text=count.toString();setTextColor(Color.LTGRAY);gravity=Gravity.CENTER}
    row.setOnClickListener{sw.isChecked=!sw.isChecked};row.addView(sw,LinearLayout.LayoutParams(dp(52),dp(44)));row.addView(label,LinearLayout.LayoutParams(0,dp(44),1f));row.addView(badge,LinearLayout.LayoutParams(dp(48),dp(44)));layerList.addView(row)
   }
+ }
+ private fun showSnapSettings(){
+  val kinds=arrayOf("KÖŞE","ORTA","KESİŞİM","DİK","YAKIN")
+  val checked=BooleanArray(kinds.size){cad.isSnapKindEnabled(kinds[it])}
+  AlertDialog.Builder(this).setTitle("SNAP AYARLARI")
+   .setMultiChoiceItems(kinds,checked){_,which,on->cad.setSnapKindEnabled(kinds[which],on)}
+   .setPositiveButton("TAMAM",null).show()
  }
  private fun showManualPointDialog(){
   val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(22),dp(8),dp(22),0)}
