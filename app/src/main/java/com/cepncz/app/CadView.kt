@@ -34,7 +34,9 @@ class CadView(context:Context):View(context){
  private var zoom=1f;private var ox=0f;private var oy=0f;private var lx=0f;private var ly=0f;private var moved=false;private var multiTouch=false;private var suppressTap=false
  private var activePointerId=MotionEvent.INVALID_POINTER_ID;private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
  private var snapEnabled=true;private val snapKinds=mutableSetOf("KÖŞE","ORTA","KESİŞİM","DİK","YAKIN");private val measurePts=mutableListOf<NczPoint>()
- private val savedPoints=mutableListOf<NczPoint>()\n private data class LengthLabel(val a:NczPoint,val b:NczPoint,val mid:NczPoint,val value:Double)\n private val lengthLabels=mutableListOf<LengthLabel>()
+ private val savedPoints=mutableListOf<NczPoint>()
+ private data class LengthLabel(val a:NczPoint,val b:NczPoint,val mid:NczPoint,val value:Double)
+ private val lengthLabels=mutableListOf<LengthLabel>()
  private var navigating=false
  private var pendingInitialFit=false
  private data class SnapHit(val p:NczPoint,val kind:String,val distance:Double)
@@ -116,7 +118,11 @@ class CadView(context:Context):View(context){
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
  fun layerCounts():Map<Int,Int> = entities.groupingBy{it.layer}.eachCount()
  fun setQueryMode(mode:QueryMode){queryMode=mode;measurePts.clear();clearSelection();onMeasureInfo?.invoke(queryModeName())}
- fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}\n fun isSnapKindEnabled(kind:String)=kind in snapKinds\n fun setSnapKindEnabled(kind:String,on:Boolean){if(on)snapKinds.add(kind)else snapKinds.remove(kind);invalidate()}\n fun startLengthLabelMode(){queryMode=QueryMode.LENGTH_LABEL;onMeasureInfo?.invoke("UZUNLUK YAZDIR • Bir kenara dokun");invalidate()}\n fun clearLengthLabels(){lengthLabels.clear();invalidate();onMeasureInfo?.invoke("Uzunluk yazıları temizlendi")}
+ fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}
+ fun isSnapKindEnabled(kind:String)=kind in snapKinds
+ fun setSnapKindEnabled(kind:String,on:Boolean){if(on)snapKinds.add(kind)else snapKinds.remove(kind);invalidate()}
+ fun startLengthLabelMode(){queryMode=QueryMode.LENGTH_LABEL;onMeasureInfo?.invoke("UZUNLUK YAZDIR • Bir kenara dokun");invalidate()}
+ fun clearLengthLabels(){lengthLabels.clear();invalidate();onMeasureInfo?.invoke("Uzunluk yazıları temizlendi")}
  fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}
  fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
  fun savedPointList():List<NczPoint> = savedPoints.toList()
