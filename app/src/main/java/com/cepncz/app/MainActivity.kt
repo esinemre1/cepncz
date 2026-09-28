@@ -57,8 +57,11 @@ class MainActivity:AppCompatActivity(){
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
   val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
-   "NOKTA KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce ekranda bir konum seç",Toast.LENGTH_SHORT).show()},
-   "NOKTA LİSTESİ" to {showPointList()},"TÜM NOKTALARI TEMİZLE" to {cad.clearSavedPoints();Toast.makeText(this,"Nokta listesi temizlendi",Toast.LENGTH_SHORT).show()}
+   "NOKTA AL / KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce haritada bir konuma dokun",Toast.LENGTH_SHORT).show()},
+   "Y - X ELLE GİR" to {showManualPointDialog()},
+   "NOKTA LİSTESİ" to {showPointList()},
+   "SON NOKTAYI SİL" to {val n=cad.savedPointCount();if(n>0){cad.removeSavedPoint(n-1);Toast.makeText(this,"N$n silindi",Toast.LENGTH_SHORT).show()}else Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show()},
+   "TÜM NOKTALARI TEMİZLE" to {confirmClearPoints()}
   ))}
   listOf(fileBtn,viewBtn,queryBtn,measureBtn,pointBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
   menuScroll.addView(menuBar);root.addView(menuScroll,LinearLayout.LayoutParams(-1,dp(50)))
@@ -118,6 +121,23 @@ class MainActivity:AppCompatActivity(){
    val badge=TextView(this).apply{text=count.toString();setTextColor(Color.LTGRAY);gravity=Gravity.CENTER}
    row.setOnClickListener{sw.isChecked=!sw.isChecked};row.addView(sw,LinearLayout.LayoutParams(dp(52),dp(44)));row.addView(label,LinearLayout.LayoutParams(0,dp(44),1f));row.addView(badge,LinearLayout.LayoutParams(dp(48),dp(44)));layerList.addView(row)
   }
+ }
+ private fun showManualPointDialog(){
+  val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(22),dp(8),dp(22),0)}
+  val y=EditText(this).apply{hint="Y (Kuzey / Northing)";inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL or android.text.InputType.TYPE_NUMBER_FLAG_SIGNED}
+  val x=EditText(this).apply{hint="X (Doğu / Easting)";inputType=y.inputType}
+  box.addView(y);box.addView(x)
+  val d=AlertDialog.Builder(this).setTitle("KOORDİNATTAN NOKTA").setView(box).setNegativeButton("İPTAL",null).setPositiveButton("EKLE",null).create()
+  d.setOnShowListener{d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
+   val yy=y.text.toString().replace(',','.').toDoubleOrNull();val xx=x.text.toString().replace(',','.').toDoubleOrNull()
+   if(yy==null||xx==null){Toast.makeText(this,"Geçerli Y ve X gir",Toast.LENGTH_SHORT).show()}else{val n=cad.addSavedPoint(yy,xx);d.dismiss();cad.zoomToSavedPoint(n-1);selectionInfo.text="N$n • Y %.3f • X %.3f".format(yy,xx)}
+  }}
+  d.show()
+ }
+ private fun confirmClearPoints(){
+  val n=cad.savedPointCount();if(n==0){Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show();return}
+  AlertDialog.Builder(this).setTitle("Noktaları temizle").setMessage("$n kayıtlı noktanın tamamı silinsin mi?")
+   .setNegativeButton("VAZGEÇ",null).setPositiveButton("SİL"){_,_->cad.clearSavedPoints();Toast.makeText(this,"Nokta listesi temizlendi",Toast.LENGTH_SHORT).show()}.show()
  }
  private fun showPointList(){
   val pts=cad.savedPointList()
