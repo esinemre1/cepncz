@@ -141,7 +141,10 @@ class CadView(context:Context):View(context){
   animateToBounds(p.x-span,p.x+span,p.y-span,p.y+span);return true
  }
  fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat";QueryMode.POINT_CAPTURE->"Nokta Yakala";QueryMode.LENGTH_LABEL->"Uzunluk Yazdır"}
- fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}\n fun selectedParcelSummary():String?{val e=selected?:return null;if(e.kind!="Polygon"||e.points.size<3)return null;return "Alan %.2f m² • Çevre %.2f m • %d köşe".format(area(e.points),perimeter(e.points),e.points.size)}\n fun labelSelectedParcelEdges():Int{val e=selected?:return 0;if(e.kind!="Polygon"||e.points.size<2)return 0;lengthLabels.clear();for(i in e.points.indices){val a=e.points[i];val b=e.points[(i+1)%e.points.size];val mid=NczPoint((a.x+b.x)/2.0,(a.y+b.y)/2.0);lengthLabels.add(LengthLabel(a,b,mid,hypot(a.x-b.x,a.y-b.y)))};invalidate();return lengthLabels.size}\n fun saveSelectedParcelCorners():Int{val e=selected?:return 0;if(e.kind!="Polygon")return 0;e.points.forEach{savedPoints.add(it)};invalidate();return e.points.size}
+ fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
+ fun selectedParcelSummary():String?{val e=selected?:return null;if(e.kind!="Polygon"||e.points.size<3)return null;return "Alan %.2f m² • Çevre %.2f m • %d köşe".format(area(e.points),perimeter(e.points),e.points.size)}
+ fun labelSelectedParcelEdges():Int{val e=selected?:return 0;if(e.kind!="Polygon"||e.points.size<2)return 0;lengthLabels.clear();for(i in e.points.indices){val a=e.points[i];val b=e.points[(i+1)%e.points.size];val mid=NczPoint((a.x+b.x)/2.0,(a.y+b.y)/2.0);lengthLabels.add(LengthLabel(a,b,mid,hypot(a.x-b.x,a.y-b.y)))};invalidate();return lengthLabels.size}
+ fun saveSelectedParcelCorners():Int{val e=selected?:return 0;if(e.kind!="Polygon")return 0;e.points.forEach{savedPoints.add(it)};invalidate();return e.points.size}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
  private fun sx(x:Double,y:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
