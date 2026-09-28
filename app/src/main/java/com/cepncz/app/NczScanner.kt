@@ -12,7 +12,18 @@ object NczScanner {
  private fun d(b:ByteArray,o:Int)=ByteBuffer.wrap(b,o,8).order(ByteOrder.LITTLE_ENDIAN).double
  private fun f(b:ByteArray,o:Int)=ByteBuffer.wrap(b,o,4).order(ByteOrder.LITTLE_ENDIAN).float.toDouble()
  private fun valid(x:Double,y:Double)=x.isFinite()&&y.isFinite()&&kotlin.math.abs(x)<1e9&&kotlin.math.abs(y)<1e9
- private fun legacy(b:ByteArray,o:Int,n:Int):String { if(n<=0||o<0||o+n>b.size)return ""; return b.copyOfRange(o,o+n).toString(Charsets.ISO_8859_1).trimEnd('\u0000') }
+ private fun legacy(b:ByteArray,o:Int,n:Int):String{
+  if(n<=0||o<0||o+n>b.size)return ""
+  val s=StringBuilder(n)
+  for(i in 0 until n){val v=b[o+i].toInt() and 255;if(v==0)break;s.append(when(v){221->'İ';222->'Ş';208->'Ğ';240->'ğ';253->'ı';254->'ş';else->v.toChar()})}
+  return s.toString().trim()
+ }
+ private fun point(rawX:Double,rawY:Double,z:Double=0.0)=NczPoint(rawY,rawX,z)
+ private fun textPayload(b:ByteArray,o:Int,ext:Int):String{
+  val tries=arrayOf((o+ext+97) to (o+ext+98),(o+ext+86) to (o+ext+87),(o+97) to (o+98),(o+86) to (o+87))
+  for((lo,to) in tries){if(lo in b.indices&&to in b.indices){val n=b[lo].toInt() and 255;if(n in 1..240&&to+n<=b.size){val s=legacy(b,to,n);if(s.isNotBlank())return s}}}
+  return ""
+ }
  fun scan(b:ByteArray):NczReport {
   val entities=ArrayList<NczEntity>(); val layers=ArrayList<String>(); var version:String?=null; var p=0
   while(p+6<b.size){
@@ -30,13 +41,13 @@ object NczScanner {
   if(o+38>b.size)return;val gt=b[o+6].toInt() and 255;val layer=b[o+7].toInt() and 255
   try{
    when(gt){
-    1->{val x=d(b,o+8);val y=d(b,o+16);if(valid(x,y))out.add(NczEntity("Point",layer,listOf(NczPoint(x,y,f(b,o+24)))))}
-    2->{val x1=d(b,o+8);val y1=d(b,o+16);val x2=d(b,o+block-19);val y2=d(b,o+block-11);if(valid(x1,y1)&&valid(x2,y2))out.add(NczEntity("Line",layer,listOf(NczPoint(x1,y1,f(b,o+24)),NczPoint(x2,y2,f(b,o+block-3)))))}
-    3->{val x=d(b,o+8);val y=d(b,o+16);val x2=d(b,o+50);val x3=d(b,o+66);if(valid(x,y))out.add(NczEntity("Circle",layer,listOf(NczPoint(x,y,f(b,o+24))),radius=kotlin.math.abs(x2-x3)/2.0))}
-    4->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;if(valid(x,y)&&q+120<=b.size)out.add(NczEntity("Arc",layer,listOf(NczPoint(x,y,f(b,o+24))),radius=d(b,q+86),startAngle=d(b,q+104),endAngle=d(b,q+112)))}
+    1->{val x=d(b,o+8);val y=d(b,o+16);if(valid(x,y))out.add(NczEntity("Point",layer,listOf(point(x,y,f(b,o+24)))))}
+    2->{val x1=d(b,o+8);val y1=d(b,o+16);val x2=d(b,o+block-19);val y2=d(b,o+block-11);if(valid(x1,y1)&&valid(x2,y2))out.add(NczEntity("Line",layer,listOf(point(x1,y1,f(b,o+24)),point(x2,y2,f(b,o+block-3)))))}
+    3->{val x=d(b,o+8);val y=d(b,o+16);val x2=d(b,o+50);val x3=d(b,o+66);if(valid(x,y))out.add(NczEntity("Circle",layer,listOf(point(x,y,f(b,o+24))),radius=kotlin.math.abs(x2-x3)/2.0))}
+    4->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;if(valid(x,y)&&q+120<=b.size)out.add(NczEntity("Arc",layer,listOf(point(x,y,f(b,o+24))),radius=d(b,q+86),startAngle=d(b,q+104),endAngle=d(b,q+112)))}
     5->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;val h=if(q+90<=b.size)f(b,q+86) else 0.0;val rot=if(q+94<=b.size)f(b,q+90)*180.0/Math.PI else 0.0;val end=(o+block+1).coerceAtMost(b.size);val start=(q+94).coerceAtMost(end);val raw=if(start<end)b.copyOfRange(start,end).toString(Charsets.ISO_8859_1) else "";val parts=raw.split('\u0000').map{it.trim()}.filter{it.isNotBlank()&&it.any{ch->ch.isLetterOrDigit()}}
-     val txt=parts.maxByOrNull{it.length} ?: "";if(valid(x,y)&&txt.isNotBlank())out.add(NczEntity("Text",layer,listOf(NczPoint(x,y,f(b,o+24))),text=txt.take(160),textHeight=h,rotation=rot))}
-    7->{val count=(block+1-113-ext)/24;if(count>=2){val pts=ArrayList<NczPoint>();for(i in 0 until count){val q=o+ext+113+i*24;if(q+24>o+block+1||q+24>b.size)break;val x=d(b,q);val y=d(b,q+8);val z=d(b,q+16);if(valid(x,y))pts.add(NczPoint(x,y,z))};if(pts.size>=2){val closed=hypot(pts.first().x-pts.last().x,pts.first().y-pts.last().y)<0.01;out.add(NczEntity(if(closed)"Polygon" else "Polyline",layer,pts))}}}
+     val txt=parts.maxByOrNull{it.length} ?: "";if(valid(x,y)&&txt.isNotBlank())out.add(NczEntity("Text",layer,listOf(point(x,y,f(b,o+24))),text=txt.take(160),textHeight=h,rotation=rot))}
+    7->{val count=(block+1-113-ext)/24;if(count>=2){val pts=ArrayList<NczPoint>();for(i in 0 until count){val q=o+ext+113+i*24;if(q+24>o+block+1||q+24>b.size)break;val x=d(b,q);val y=d(b,q+8);val z=d(b,q+16);if(valid(x,y))pts.add(point(x,y,z))};if(pts.size>=2){val closed=hypot(pts.first().x-pts.last().x,pts.first().y-pts.last().y)<0.01;out.add(NczEntity(if(closed)"Polygon" else "Polyline",layer,pts))}}}
    }
   }catch(_:Exception){}
  }
