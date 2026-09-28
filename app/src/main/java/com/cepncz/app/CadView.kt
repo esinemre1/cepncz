@@ -204,7 +204,7 @@ class CadView(context:Context):View(context){
   val detail=!fastFrame&&zoom>=0.55f
   val labels=showAreas&&!fastFrame&&zoom>=0.8f
   val allowText=!navigating&&(!performanceMode||zoom>=2.5f)
-  val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)
+  val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)\n  val occupiedLabels=ArrayList<RectF>()\n  fun freeLabel(box:RectF):Boolean{if(box.right<0||box.left>width||box.bottom<0||box.top>height)return false;if(occupiedLabels.any{RectF.intersects(it,box)})return false;occupiedLabels.add(box);return true}
   line.strokeWidth=if(performanceMode)1f else 2f
   line.isAntiAlias=!performanceMode
   for(m in meta){
@@ -216,7 +216,7 @@ class CadView(context:Context):View(context){
      if(labels&&m.area>.01){text.textSize=22f;c.drawText("%.2f m²".format(m.area),sx(m.cx,m.cy),sy(m.cx,m.cy),text)}}
     "Circle"->{val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),(e.radius*bs()*zoom).toFloat(),line)}
     "Arc"->{val p=e.points[0];val r=(e.radius*bs()*zoom).toFloat();c.drawArc(RectF(sx(p.x,p.y)-r,sy(p.x,p.y)-r,sx(p.x,p.y)+r,sy(p.x,p.y)+r),e.startAngle.toFloat(),(e.endAngle-e.startAngle).toFloat(),false,line)}
-    "Text"->{if(!allowText)continue;val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(9f,44f);c.save();c.rotate((-e.rotation).toFloat(),sx(p.x,p.y),sy(p.x,p.y));c.drawText(e.text,sx(p.x,p.y),sy(p.x,p.y),text);c.restore();text.color=Color.WHITE}
+    "Text"->{if(!allowText||e.text.isBlank())continue;val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(11f,38f);val x=sx(p.x,p.y);val y=sy(p.x,p.y);val w=text.measureText(e.text);val h=text.textSize*1.15f;val pad=if(zoom<1.5f)10f else 5f;val box=RectF(x-pad,y-h-pad,x+w+pad,y+pad);if(freeLabel(box)){c.save();c.rotate((-e.rotation).toFloat(),x,y);c.drawText(e.text,x,y,text);c.restore()};text.color=Color.WHITE}
     else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false,fastFrame),line)}
    }
    if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x,it.y),sy(it.x,it.y),4f,line)}
@@ -231,7 +231,7 @@ class CadView(context:Context):View(context){
   }
   if(lengthLabels.isNotEmpty()&&!navigating){
    val lp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;textSize=20f;textAlign=Paint.Align.CENTER}
-   lengthLabels.forEach{l->val x=sx(l.mid.x,l.mid.y);val y=sy(l.mid.x,l.mid.y);val ang=Math.toDegrees(atan2((sy(l.b.x,l.b.y)-sy(l.a.x,l.a.y)).toDouble(),(sx(l.b.x,l.b.y)-sx(l.a.x,l.a.y)).toDouble())).toFloat();c.save();c.rotate(if(ang>90||ang<-90)ang+180 else ang,x,y);c.drawText("%.2f m".format(l.value),x,y-7,lp);c.restore()}
+   lengthLabels.forEach{l->val x=sx(l.mid.x,l.mid.y);val y=sy(l.mid.x,l.mid.y);val label="%.2f m".format(l.value);val w=lp.measureText(label);val box=RectF(x-w/2-5,y-lp.textSize-12,x+w/2+5,y+5);if(freeLabel(box)){val ang=Math.toDegrees(atan2((sy(l.b.x,l.b.y)-sy(l.a.x,l.a.y)).toDouble(),(sx(l.b.x,l.b.y)-sx(l.a.x,l.a.y)).toDouble())).toFloat();c.save();c.rotate(if(ang>90||ang<-90)ang+180 else ang,x,y);c.drawText(label,x,y-7,lp);c.restore()}}
   }
   if(savedPoints.isNotEmpty()){
    val pp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.YELLOW;style=Paint.Style.STROKE;strokeWidth=3f}
