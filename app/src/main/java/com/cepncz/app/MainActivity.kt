@@ -57,6 +57,12 @@ class MainActivity:AppCompatActivity(){
    "SNAP AÇ / KAPAT" to {val on=cad.toggleSnap();Toast.makeText(this,if(on)"SNAP açık" else "SNAP kapalı",Toast.LENGTH_SHORT).show()},
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
+  val parcelBtn=menuButton("PARSEL");parcelBtn.setOnClickListener{v->popup(v,listOf(
+   "PARSEL SEÇ" to {cad.setQueryMode(CadView.QueryMode.SELECT);Toast.makeText(this,"Parsele dokunarak seç",Toast.LENGTH_SHORT).show()},
+   "PARSEL BİLGİSİ" to {val s=cad.selectedParcelSummary();if(s!=null)AlertDialog.Builder(this).setTitle("PARSEL BİLGİSİ").setMessage(s).setPositiveButton("TAMAM",null).show() else Toast.makeText(this,"Önce bir parsel seç",Toast.LENGTH_SHORT).show()},
+   "TÜM KENARLARI YAZDIR" to {val n=cad.labelSelectedParcelEdges();Toast.makeText(this,if(n>0)"$n kenar uzunluğu yazdırıldı" else "Önce bir parsel seç",Toast.LENGTH_SHORT).show()},
+   "KÖŞELERİ NOKTA YAP" to {val n=cad.saveSelectedParcelCorners();Toast.makeText(this,if(n>0)"$n köşe Nokta Listesine eklendi" else "Önce bir parsel seç",Toast.LENGTH_SHORT).show()}
+  ))}
   val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
    "NOKTA YAKALA" to {cad.startPointCapture()},
    "SNAP AYARLARI" to {showSnapSettings()},
@@ -66,7 +72,7 @@ class MainActivity:AppCompatActivity(){
    "SON NOKTAYI SİL" to {val n=cad.savedPointCount();if(n>0){cad.removeSavedPoint(n-1);Toast.makeText(this,"N$n silindi",Toast.LENGTH_SHORT).show()}else Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show()},
    "TÜM NOKTALARI TEMİZLE" to {confirmClearPoints()}
   ))}
-  listOf(fileBtn,viewBtn,queryBtn,measureBtn,pointBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
+  listOf(fileBtn,viewBtn,queryBtn,measureBtn,parcelBtn,pointBtn,cadBtn).forEach{menuBar.addView(it,LinearLayout.LayoutParams(dp(92),dp(42)).apply{setMargins(dp(2),0,dp(2),0)})}
   menuScroll.addView(menuBar);root.addView(menuScroll,LinearLayout.LayoutParams(-1,dp(50)))
   val workspace=FrameLayout(this)
   cad=CadView(this)
