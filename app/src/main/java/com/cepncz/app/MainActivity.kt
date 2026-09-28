@@ -139,16 +139,7 @@ class MainActivity:AppCompatActivity(){
   AlertDialog.Builder(this).setTitle("Noktaları temizle").setMessage("$n kayıtlı noktanın tamamı silinsin mi?")
    .setNegativeButton("VAZGEÇ",null).setPositiveButton("SİL"){_,_->cad.clearSavedPoints();Toast.makeText(this,"Nokta listesi temizlendi",Toast.LENGTH_SHORT).show()}.show()
  }
- private fun showPointList(){
-  val pts=cad.savedPointList()
-  if(pts.isEmpty()){Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show();return}
-  val labels=pts.mapIndexed{i,p->"N"+(i+1)+"   Y %.3f   X %.3f".format(p.y,p.x)}.toTypedArray()
-  AlertDialog.Builder(this).setTitle("NOKTA LİSTESİ • "+pts.size)
-   .setItems(labels){_,which->cad.zoomToSavedPoint(which)}
-   .setNeutralButton("SON NOKTAYI SİL"){_,_->cad.removeSavedPoint(pts.lastIndex)}
-   .setNegativeButton("KAPAT",null).show()
- }
- private fun load(u:Uri){
+ private fun showPointList(){\n  val pts=cad.savedPointList()\n  if(pts.isEmpty()){Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show();return}\n  val labels=pts.mapIndexed{i,p->"N%-4d  Y %12.3f   X %12.3f".format(i+1,p.y,p.x)}.toTypedArray()\n  AlertDialog.Builder(this).setTitle("NOKTA LİSTESİ • "+pts.size+" NOKTA")\n   .setItems(labels){_,which->cad.zoomToSavedPoint(which);selectionInfo.text=labels[which]}\n   .setNeutralButton("SON NOKTAYI SİL"){_,_->cad.removeSavedPoint(pts.lastIndex);Toast.makeText(this,"N"+pts.size+" silindi",Toast.LENGTH_SHORT).show()}\n   .setNegativeButton("KAPAT",null).show()\n }\n private fun load(u:Uri){
   info.text="NCZ okunuyor…"
   selectionInfo.text="Dosya hazırlanıyor…"
   ioExecutor.execute{
