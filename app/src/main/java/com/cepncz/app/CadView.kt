@@ -134,7 +134,7 @@ class CadView(context:Context):View(context){
   val span=max(maxX-minX,maxY-minY).coerceAtLeast(1.0)/40.0
   animateToBounds(p.x-span,p.x+span,p.y-span,p.y+span);return true
  }
- fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat"}
+ fun queryModeName()=when(queryMode){QueryMode.SELECT->"Seçim";QueryMode.AREA->"Kapalı Alan";QueryMode.LENGTH->"Uzunluk";QueryMode.DISTANCE->"2 Nokta";QueryMode.POLYLINE->"Kırık Hat";QueryMode.COORDINATE->"Koordinat";QueryMode.POINT_CAPTURE->"Nokta Yakala"}
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
