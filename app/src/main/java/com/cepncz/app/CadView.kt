@@ -204,7 +204,9 @@ class CadView(context:Context):View(context){
   val detail=!fastFrame&&zoom>=0.55f
   val labels=showAreas&&!fastFrame&&zoom>=0.8f
   val allowText=!navigating&&(!performanceMode||zoom>=2.5f)
-  val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)\n  val occupiedLabels=ArrayList<RectF>()\n  fun freeLabel(box:RectF):Boolean{if(box.right<0||box.left>width||box.bottom<0||box.top>height)return false;if(occupiedLabels.any{RectF.intersects(it,box)})return false;occupiedLabels.add(box);return true}
+  val allowFill=!navigating&&(!performanceMode||zoom>=2.0f)
+  val occupiedLabels=ArrayList<RectF>()
+  fun freeLabel(box:RectF):Boolean{if(box.right<0||box.left>width||box.bottom<0||box.top>height)return false;if(occupiedLabels.any{RectF.intersects(it,box)})return false;occupiedLabels.add(box);return true}
   line.strokeWidth=if(performanceMode)1f else 2f
   line.isAntiAlias=!performanceMode
   for(m in meta){
