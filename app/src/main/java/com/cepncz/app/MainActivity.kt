@@ -50,14 +50,16 @@ class MainActivity:AppCompatActivity(){
   ))}
   val measureBtn=menuButton("ÖLÇÜM");measureBtn.setOnClickListener{v->popup(v,listOf(
    "2 NOKTA MESAFE" to {cad.setQueryMode(CadView.QueryMode.DISTANCE)},"KIRIK HAT" to {cad.setQueryMode(CadView.QueryMode.POLYLINE)},
-   "UZUNLUK YAZDIR" to {cad.startLengthLabelMode()},"UZUNLUK YAZILARINI SİL" to {cad.clearLengthLabels()},\n   "GERİ AL" to {cad.undoMeasure()},"TEMİZLE" to {cad.clearMeasure()}
+   "UZUNLUK YAZDIR" to {cad.startLengthLabelMode()},"UZUNLUK YAZILARINI SİL" to {cad.clearLengthLabels()},
+   "GERİ AL" to {cad.undoMeasure()},"TEMİZLE" to {cad.clearMeasure()}
   ))}
   val cadBtn=menuButton("CAD");cadBtn.setOnClickListener{v->popup(v,listOf(
    "SNAP AÇ / KAPAT" to {val on=cad.toggleSnap();Toast.makeText(this,if(on)"SNAP açık" else "SNAP kapalı",Toast.LENGTH_SHORT).show()},
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
   val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
-   "NOKTA YAKALA" to {cad.startPointCapture()},\n   "SNAP AYARLARI" to {showSnapSettings()},
+   "NOKTA YAKALA" to {cad.startPointCapture()},
+   "SNAP AYARLARI" to {showSnapSettings()},
    "SON KONUMU KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce haritada bir konuma dokun",Toast.LENGTH_SHORT).show()},
    "Y - X ELLE GİR" to {showManualPointDialog()},
    "NOKTA LİSTESİ" to {showPointList()},
