@@ -119,7 +119,9 @@ class CadView(context:Context):View(context){
  fun toggleSnap():Boolean{snapEnabled=!snapEnabled;return snapEnabled}
  fun clearMeasure(){measurePts.clear();invalidate();onMeasureInfo?.invoke("Ölçüm temizlendi")}
  fun undoMeasure(){if(measurePts.isNotEmpty())measurePts.removeAt(measurePts.lastIndex);invalidate();updateMeasureInfo()}
- fun savedPointList():List<NczPoint> = savedPoints.toList()\n fun addSavedPoint(y:Double,x:Double):Int{savedPoints.add(NczPoint(x,y));invalidate();return savedPoints.size}\n fun savedPointCount():Int=savedPoints.size
+ fun savedPointList():List<NczPoint> = savedPoints.toList()
+ fun addSavedPoint(y:Double,x:Double):Int{savedPoints.add(NczPoint(x,y));invalidate();return savedPoints.size}
+ fun savedPointCount():Int=savedPoints.size
  fun saveCurrentPoint():NczPoint?{
   val p=measurePts.lastOrNull()?:if(lastWorldX!=null&&lastWorldY!=null)NczPoint(lastWorldX!!,lastWorldY!!)else null
   if(p!=null){savedPoints.add(p);invalidate();onMeasureInfo?.invoke("N${savedPoints.size} • Y %.3f • X %.3f".format(p.y,p.x))}
