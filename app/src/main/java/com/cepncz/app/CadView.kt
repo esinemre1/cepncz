@@ -78,7 +78,8 @@ class CadView(context:Context):View(context){
  private fun navUpdate(){val x=lastWorldX;val y=lastWorldY;onNavigationInfo?.invoke("ZOOM %.2fx%s".format(zoom,if(x==null||y==null)"" else "  •  X %.2f  Y %.2f".format(x,y)))}
  private fun zoomAt(fx:Float,fy:Float,factor:Float){
   val old=zoom;val next=(zoom*factor).coerceIn(.05f,maxZoom);if(next==old)return
-  val r=next/old;val cx=width/2f;val cy=height/2f;zoom=next\n  ox=(fx-cx)-((fx-cx)-ox)*r;oy=(fy-cy)-((fy-cy)-oy)*r;navUpdate();postInvalidateOnAnimation()
+  val r=next/old;val cx=width/2f;val cy=height/2f;zoom=next
+  ox=(fx-cx)-((fx-cx)-ox)*r;oy=(fy-cy)-((fy-cy)-oy)*r;navUpdate();postInvalidateOnAnimation()
  }
  fun zoomIn(){zoomAt(width/2f,height/2f,1.5f)}
  fun zoomOut(){zoomAt(width/2f,height/2f,1f/1.5f)}
