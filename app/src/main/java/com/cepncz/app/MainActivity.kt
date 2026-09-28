@@ -57,7 +57,8 @@ class MainActivity:AppCompatActivity(){
    "TABAKALAR" to {panel.visibility=if(panel.visibility==View.VISIBLE)View.GONE else View.VISIBLE},"SEÇİM MODU" to {cad.setQueryMode(CadView.QueryMode.SELECT)}
   ))}
   val pointBtn=menuButton("NOKTA");pointBtn.setOnClickListener{v->popup(v,listOf(
-   "NOKTA YAKALA" to {cad.startPointCapture()},\n   "SON KONUMU KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce haritada bir konuma dokun",Toast.LENGTH_SHORT).show()},
+   "NOKTA YAKALA" to {cad.startPointCapture()},
+   "SON KONUMU KAYDET" to {if(cad.saveCurrentPoint()==null)Toast.makeText(this,"Önce haritada bir konuma dokun",Toast.LENGTH_SHORT).show()},
    "Y - X ELLE GİR" to {showManualPointDialog()},
    "NOKTA LİSTESİ" to {showPointList()},
    "SON NOKTAYI SİL" to {val n=cad.savedPointCount();if(n>0){cad.removeSavedPoint(n-1);Toast.makeText(this,"N$n silindi",Toast.LENGTH_SHORT).show()}else Toast.makeText(this,"Kayıtlı nokta yok",Toast.LENGTH_SHORT).show()},
