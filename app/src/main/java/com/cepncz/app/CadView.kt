@@ -15,7 +15,7 @@ data class CadSelection(val kind:String,val layer:Int,val layerName:String,val x
 
 class CadView(context:Context):View(context){
  enum class FillMode{NONE,SOLID,HATCH}
- enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE}
+ enum class QueryMode{SELECT,AREA,LENGTH,DISTANCE,POLYLINE,COORDINATE,POINT_CAPTURE}
  var onSelectionChanged:((CadSelection?)->Unit)?=null
  var onMeasureInfo:((String)->Unit)?=null
  var onNavigationInfo:((String)->Unit)?=null
@@ -55,7 +55,7 @@ class CadView(context:Context):View(context){
   override fun onDoubleTap(e:MotionEvent):Boolean{zoomAt(e.x,e.y,2.0f);return true}
   override fun onDown(e:MotionEvent)=true
   override fun onLongPress(e:MotionEvent){}
-  override fun onSingleTapConfirmed(e:MotionEvent):Boolean{if(queryMode==QueryMode.DISTANCE||queryMode==QueryMode.POLYLINE||queryMode==QueryMode.COORDINATE)measureTap(e.x,e.y)else selectAt(e.x,e.y);return true}
+  override fun onSingleTapConfirmed(e:MotionEvent):Boolean{if(queryMode==QueryMode.POINT_CAPTURE)capturePoint(e.x,e.y) else if(queryMode==QueryMode.DISTANCE||queryMode==QueryMode.POLYLINE||queryMode==QueryMode.COORDINATE)measureTap(e.x,e.y)else selectAt(e.x,e.y);return true}
  })
 
  fun setEntities(v:List<NczEntity>,names:List<String> = emptyList()){
@@ -302,6 +302,12 @@ class CadView(context:Context):View(context){
   snapHit=candidates.minWithOrNull(compareBy<SnapHit>{when(it.kind){"KESİŞİM"->0;"KÖŞE"->1;"DİK"->2;"ORTA"->3;else->4}}.thenBy{it.distance})
   return snapHit?.p?:raw
  }
+ private fun capturePoint(px:Float,py:Float){
+  val p=snapPoint(px,py);val kind=snapHit?.kind?:"SERBEST"
+  savedPoints.add(p);invalidate()
+  onMeasureInfo?.invoke("N${savedPoints.size} • $kind • Y %.3f • X %.3f".format(p.y,p.x))
+ }
+ fun startPointCapture(){measurePts.clear();queryMode=QueryMode.POINT_CAPTURE;snapEnabled=true;snapHit=null;onMeasureInfo?.invoke("NOKTA YAKALA • Köşe / Orta / Kesişim / Yakın");invalidate()}
  private fun updateMeasureInfo(){
   val total=length(measurePts,false)
   onMeasureInfo?.invoke(when(queryMode){
@@ -335,7 +341,7 @@ class CadView(context:Context):View(context){
   when(queryMode){
    QueryMode.AREA->chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
    QueryMode.LENGTH->{var best=35.0;for(m in meta){if(m.e.layer in hidden||!visible(m)||m.e.kind=="Text"||m.e.points.size<2)continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
-   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE->{}
+   QueryMode.DISTANCE,QueryMode.POLYLINE,QueryMode.COORDINATE,QueryMode.POINT_CAPTURE->{}
    QueryMode.SELECT->{
     chosen=meta.asReversed().firstOrNull{m->m.e.layer !in hidden&&visible(m)&&m.e.kind=="Polygon"&&m.e.points.size>=3&&pointInPolygon(x,y,m.e.points)}
     if(chosen==null){var best=45.0;for(m in meta){if(m.e.layer in hidden||!visible(m))continue;val d=screenDistanceToEntity(x,y,m.e);if(d<best){best=d;chosen=m}}}
