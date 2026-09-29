@@ -173,7 +173,7 @@ class MainActivity:AppCompatActivity(){
     val r=NczScanner.scan(bytes);val v=r.version?:"?"
     val types=r.entities.groupingBy{it.kind}.eachCount().entries.sortedByDescending{it.value}
     runOnUiThread{
-     cad.setEntities(r.entities,r.layers);refreshLayers()
+     cad.setSourceLayerColors(r.layerColors);cad.setEntities(r.entities,r.layers);refreshLayers()
      info.text="  "+(r.size/1024)+" KB • Netcad "+v+" • "+r.entities.size+" geometri"
      selectionInfo.text="Hazır • "+r.entities.size+" geometri"
      val summary=buildString{
