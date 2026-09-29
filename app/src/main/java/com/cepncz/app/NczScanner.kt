@@ -5,7 +5,7 @@ import kotlin.math.*
 
 data class NczPoint(val x:Double,val y:Double,val z:Double=0.0)
 data class NczEntity(val kind:String,val layer:Int,val points:List<NczPoint>,val text:String="",val radius:Double=0.0,val startAngle:Double=0.0,val endAngle:Double=0.0,val textHeight:Double=0.0,val rotation:Double=0.0,val symbolCode:Int=-1,val scale:Double=1.0)
-data class NczReport(val size:Int,val version:String?,val layers:List<String>,val entities:List<NczEntity>)
+data class NczReport(val size:Int,val version:String?,val layers:List<String>,val entities:List<NczEntity>,val layerColors:Map<Int,Int> = emptyMap())
 
 object NczScanner{
  private fun u32(b:ByteArray,o:Int):Long{if(o<0||o+4>b.size)return -1;return ByteBuffer.wrap(b,o,4).order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xffffffffL}
