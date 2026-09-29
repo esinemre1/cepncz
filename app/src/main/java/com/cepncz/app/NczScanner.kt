@@ -19,6 +19,8 @@ object NczScanner {
   return s.toString().trim()
  }
  private fun point(rawX:Double,rawY:Double,z:Double=0.0)=NczPoint(rawY,rawX,z)
+ private fun normDeg(v:Double):Double{if(!v.isFinite())return 0.0;return ((v%360.0)+360.0)%360.0}
+ private fun radDeg(v:Double)=normDeg(v*180.0/Math.PI)
  private fun textPayload(b:ByteArray,o:Int,ext:Int):String{
   val tries=arrayOf((o+ext+97) to (o+ext+98),(o+ext+86) to (o+ext+87),(o+97) to (o+98),(o+86) to (o+87))
   for((lo,to) in tries){if(lo in b.indices&&to in b.indices){val n=b[lo].toInt() and 255;if(n in 1..240&&to+n<=b.size){val s=legacy(b,to,n);if(s.isNotBlank())return s}}}
@@ -52,7 +54,32 @@ object NczScanner {
     2->{val x1=d(b,o+8);val y1=d(b,o+16);val x2=d(b,o+block-19);val y2=d(b,o+block-11);if(valid(x1,y1)&&valid(x2,y2))out.add(NczEntity("Line",layer,listOf(point(x1,y1,f(b,o+24)),point(x2,y2,f(b,o+block-3)))))}
     3->{val x=d(b,o+8);val y=d(b,o+16);val x2=d(b,o+50);val x3=d(b,o+66);if(valid(x,y))out.add(NczEntity("Circle",layer,listOf(point(x,y,f(b,o+24))),radius=kotlin.math.abs(x2-x3)/2.0))}
     4->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;if(valid(x,y)&&q+120<=b.size)out.add(NczEntity("Arc",layer,listOf(point(x,y,f(b,o+24))),radius=d(b,q+86),startAngle=d(b,q+104),endAngle=d(b,q+112)))}
-    5->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;val h=if(q+90<=b.size)f(b,q+86) else 0.0;val rot=if(q+94<=b.size)f(b,q+90)*180.0/Math.PI else 0.0;val txt=textPayload(b,o,ext);if(valid(x,y)&&txt.isNotBlank())out.add(NczEntity("Text",layer,listOf(point(x,y,f(b,o+24))),text=txt.take(160),textHeight=h,rotation=rot))}
+    9->{
+     val ox=d(b,o+8);val oy=d(b,o+16);val pts=ArrayList<NczPoint>()
+     if(valid(ox,oy)){
+      pts.add(point(ox,oy,f(b,o+24)))
+      var q=o+ext+122;val end=(o+block+1).coerceAtMost(b.size)
+      while(q+8<=end){
+       val dx=f(b,q);val dy=f(b,q+4)
+       if(!dx.isFinite()||!dy.isFinite())break
+       val rx=ox+dx;val ry=oy+dy
+       if(valid(rx,ry))pts.add(point(rx,ry))
+       q+=18
+      }
+      if(pts.size>=2)out.add(NczEntity("Polyline",layer,pts))
+     }
+    }
+     val x=d(b,o+8);val y=d(b,o+16);val q=o+ext
+     val h=if(q+90<=b.size)f(b,q+86) else 0.0
+     val rot=if(q+94<=b.size)radDeg(f(b,q+90)) else 0.0
+    13->{
+     val x=d(b,o+8);val y=d(b,o+16);val q=o+ext
+     val name=if(q+86<b.size){val n=b[q+86].toInt() and 255;if(n in 1..120&&q+87+n<=b.size)legacy(b,q+87,n) else ""}else ""
+     val rot=if(q+122<=b.size)radDeg(f(b,q+118)) else 0.0
+     if(valid(x,y))out.add(NczEntity("Block",layer,listOf(point(x,y,f(b,o+24))),text=name,rotation=rot))
+    }
+     if(valid(x,y)&&txt.isNotBlank())out.add(NczEntity("Text",layer,listOf(point(x,y,f(b,o+24))),text=txt.take(160),textHeight=h,rotation=rot))
+    }
     6->{val x=d(b,o+8);val y=d(b,o+16);val q=o+ext;val end=(o+block+1).coerceAtMost(b.size);val so=if(q+94<end)q+94 else o+94;val code=if(so in 0 until end)b[so].toInt() and 255 else 0;val size=if(q+90<=end)f(b,q+86).takeIf{it.isFinite()&&it>0&&it<100000}?:5.0 else 5.0;val rot=if(q+94<=end)f(b,q+90)*180.0/Math.PI else 0.0;if(valid(x,y))out.add(NczEntity("Symbol",layer,listOf(point(x,y,f(b,o+24))),text="S$code",textHeight=size,rotation=((rot%360)+360)%360,symbolCode=code))}
     9->{val ox=d(b,o+8);val oy=d(b,o+16);val pts=ArrayList<NczPoint>();if(valid(ox,oy)){pts.add(point(ox,oy,f(b,o+24)));var q=o+ext+122;val end=(o+block+1).coerceAtMost(b.size);while(q+8<=end){val dx=f(b,q);val dy=f(b,q+4);if(!dx.isFinite()||!dy.isFinite())break;val rx=ox+dx;val ry=oy+dy;if(valid(rx,ry)){pts.add(point(rx,ry))};q+=18};if(pts.size>=2)out.add(NczEntity("Polyline",layer,pts))}}
     10->{val ax=d(b,o+8);val ay=d(b,o+16);val q=o+ext;val bx=if(q+112<b.size)d(b,q+104) else ax;val by=if(q+120<b.size)d(b,q+112) else ay;val rot=if(q+124<=b.size)f(b,q+120) else 0.0;if(valid(ax,ay)&&valid(bx,by)){val a=point(ax,ay);val b2=point(bx,by);val w=b2.x-a.x;val h=b2.y-a.y;val ang=rot;val ca=kotlin.math.cos(ang);val sa=kotlin.math.sin(ang);val p2=NczPoint(a.x+w*ca,a.y+w*sa);val p3=NczPoint(a.x+w*ca-h*sa,a.y+w*sa+h*ca);val p4=NczPoint(a.x-h*sa,a.y+h*ca);out.add(NczEntity("Polygon",layer,listOf(a,p2,p3,p4),rotation=ang*180.0/Math.PI))}}
