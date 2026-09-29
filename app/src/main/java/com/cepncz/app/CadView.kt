@@ -46,7 +46,7 @@ class CadView(context:Context):View(context){
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
  private var lastWorldX:Double?=null;private var lastWorldY:Double?=null
- private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
+ private var sourceLayerColors:List<Int> = emptyList()\n private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
   override fun onScaleBegin(d:ScaleGestureDetector):Boolean{navigating=true;snapHit=null;return true}
@@ -113,7 +113,7 @@ class CadView(context:Context):View(context){
  fun setShowAreas(v:Boolean){showAreas=v;invalidate()};fun isShowAreas()=showAreas
  fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints
  fun setShowEdgeLengths(v:Boolean){showEdgeLengths=v;invalidate()};fun isShowEdgeLengths()=showEdgeLengths
- fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
+ fun setSourceLayerColors(v:List<Int>){sourceLayerColors=v;invalidate()}\n fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
  fun setAllLayersVisible(v:Boolean){hidden.clear();if(!v)entities.map{it.layer}.distinct().forEach{hidden.add(it)};invalidate()}
  fun isLayerVisible(i:Int)=i !in hidden
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
@@ -170,7 +170,7 @@ class CadView(context:Context):View(context){
   if(close)q.close()
   return q
  }
- private fun color(layer:Int)=palette[abs(layer)%palette.size]
+ private fun color(layer:Int):Int{val raw=sourceLayerColors.getOrNull(layer)?:sourceLayerColors.getOrNull(layer-1);if(raw!=null){val r=Color.red(raw);val g=Color.green(raw);val b=Color.blue(raw);return if(r==0&&g==0&&b<=1)Color.BLACK else raw};return palette[abs(layer)%palette.size]}
 
  private fun drawScaleBar(c:Canvas){
   if(width<100||height<100)return
@@ -221,7 +221,7 @@ class CadView(context:Context):View(context){
     "Text"->{if(!allowText||e.text.isBlank())continue;val p=e.points[0];text.color=line.color;text.textSize=(e.textHeight*bs()*zoom).toFloat().coerceIn(10f,42f);text.textAlign=Paint.Align.LEFT;val x=sx(p.x,p.y);val y=sy(p.x,p.y);val fm=text.fontMetrics;val w=text.measureText(e.text);val h=fm.descent-fm.ascent;val pad=if(zoom<1.5f)8f else 4f;val box=RectF(x-pad,y+fm.ascent-pad,x+w+pad,y+fm.descent+pad);if(freeLabel(box)){c.save();c.rotate((-e.rotation).toFloat(),x,y);c.drawText(e.text,x,y,text);c.restore()};text.textAlign=Paint.Align.LEFT;text.color=Color.WHITE}
     "Symbol"->{if(navigating)continue;val p=e.points[0];val x=sx(p.x,p.y);val y=sy(p.x,p.y);val r=(e.textHeight*bs()*zoom*0.45).toFloat().coerceIn(5f,22f);val sp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=line.color;style=Paint.Style.STROKE;strokeWidth=2f};c.save();c.rotate((-e.rotation).toFloat(),x,y);when(e.symbolCode%6){0->{c.drawCircle(x,y,r,sp);c.drawLine(x-r,y,x+r,y,sp);c.drawLine(x,y-r,x,y+r,sp)};1->{c.drawRect(x-r,y-r,x+r,y+r,sp);c.drawLine(x-r,y-r,x+r,y+r,sp);c.drawLine(x+r,y-r,x-r,y+r,sp)};2->{val q=Path();q.moveTo(x,y-r);q.lineTo(x+r,y+r);q.lineTo(x-r,y+r);q.close();c.drawPath(q,sp)};3->{c.drawCircle(x,y,r,sp);c.drawCircle(x,y,r*.35f,sp)};4->{c.drawLine(x-r,y,x+r,y,sp);c.drawLine(x,y-r,x,y+r,sp);c.drawLine(x-r*.7f,y-r*.7f,x+r*.7f,y+r*.7f,sp);c.drawLine(x+r*.7f,y-r*.7f,x-r*.7f,y+r*.7f,sp)};else->{val q=Path();q.moveTo(x,y-r);q.lineTo(x+r,y);q.lineTo(x,y+r);q.lineTo(x-r,y);q.close();c.drawPath(q,sp)}};c.restore()}
     "Block"->{if(navigating)continue;val p=e.points[0];val x=sx(p.x,p.y);val y=sy(p.x,p.y);val r=(8f*e.scale.toFloat().coerceIn(.5f,2.5f));val bp=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=line.color;style=Paint.Style.STROKE;strokeWidth=2f};c.save();c.rotate((-e.rotation).toFloat(),x,y);val q=Path();q.moveTo(x,y-r);q.lineTo(x+r,y);q.lineTo(x,y+r);q.lineTo(x-r,y);q.close();c.drawPath(q,bp);c.drawLine(x-r,y,x+r,y,bp);c.drawLine(x,y-r,x,y+r,bp);c.restore();if(allowText&&zoom>=2f&&e.text.isNotBlank()){text.color=line.color;text.textSize=14f;val label=e.text;val w=text.measureText(label);val box=RectF(x+r+3,y-18,x+r+w+8,y+4);if(freeLabel(box))c.drawText(label,x+r+5,y,text);text.color=Color.WHITE}}
-    else->{if(e.points.size==1){val p=e.points[0];c.drawCircle(sx(p.x,p.y),sy(p.x,p.y),if(showPoints)6f else 3f,line)}else c.drawPath(path(e.points,false,fastFrame),line)}
+    else->{if(e.points.size==1){val p=e.points[0];val x=sx(p.x,p.y);val y=sy(p.x,p.y);c.drawCircle(x,y,if(showPoints)6f else 3f,line);if(allowText&&zoom>=2.2f&&e.text.isNotBlank()){text.color=line.color;text.textSize=14f;val w=text.measureText(e.text);val box=RectF(x+7,y-17,x+w+12,y+4);if(freeLabel(box))c.drawText(e.text,x+9,y,text);text.color=Color.WHITE}}else c.drawPath(path(e.points,false,fastFrame),line)}
    }
    if(showPoints&&detail&&e.kind!="Text"&&e.points.size<500)e.points.forEach{c.drawCircle(sx(it.x,it.y),sy(it.x,it.y),4f,line)}
    if(e===selected){
