@@ -46,7 +46,8 @@ class CadView(context:Context):View(context){
  private var minX=0.0;private var maxX=1.0;private var minY=0.0;private var maxY=1.0
  private val maxZoom=5000f
  private var lastWorldX:Double?=null;private var lastWorldY:Double?=null
- private var sourceLayerColors:List<Int> = emptyList()\n private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
+ private var sourceLayerColors:List<Int> = emptyList()
+ private val palette=intArrayOf(Color.rgb(255,170,55),Color.rgb(80,200,255),Color.rgb(110,220,130),Color.rgb(255,110,130),Color.rgb(210,150,255),Color.rgb(255,220,90),Color.rgb(100,230,220))
 
  private val scaler=ScaleGestureDetector(context,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){
   override fun onScaleBegin(d:ScaleGestureDetector):Boolean{navigating=true;snapHit=null;return true}
@@ -113,7 +114,8 @@ class CadView(context:Context):View(context){
  fun setShowAreas(v:Boolean){showAreas=v;invalidate()};fun isShowAreas()=showAreas
  fun setShowPoints(v:Boolean){showPoints=v;invalidate()};fun isShowPoints()=showPoints
  fun setShowEdgeLengths(v:Boolean){showEdgeLengths=v;invalidate()};fun isShowEdgeLengths()=showEdgeLengths
- fun setSourceLayerColors(v:List<Int>){sourceLayerColors=v;invalidate()}\n fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
+ fun setSourceLayerColors(v:List<Int>){sourceLayerColors=v;invalidate()}
+ fun setLayerVisible(i:Int,v:Boolean){if(v)hidden.remove(i)else hidden.add(i);invalidate()}
  fun setAllLayersVisible(v:Boolean){hidden.clear();if(!v)entities.map{it.layer}.distinct().forEach{hidden.add(it)};invalidate()}
  fun isLayerVisible(i:Int)=i !in hidden
  fun layerName(i:Int)=layers.getOrNull(i)?.takeIf{it.isNotBlank()}?:"Tabaka $i"
