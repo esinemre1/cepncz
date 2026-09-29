@@ -35,7 +35,9 @@ object NczScanner {
    if(type==21||type==22) parseGeometry(b,p,block.toInt(),if(type==22)28 else 0,entities)
    p+=total.toInt()
   }
-  val hasSmart=entities.any{it.text=="SMART"}\n  if(hasSmart)entities.removeAll{it.kind=="Symbol"&&it.layer==0&&it.symbolCode==0}\n  return NczReport(b.size,version,layers,entities)
+  val hasSmart=entities.any{it.text=="SMART"}
+  if(hasSmart)entities.removeAll{it.kind=="Symbol"&&it.layer==0&&it.symbolCode==0}
+  return NczReport(b.size,version,layers,entities)
  }
  private fun parseEmbedded(b:ByteArray,start:Int,end:Int,out:MutableList<NczEntity>){
   var q=start
