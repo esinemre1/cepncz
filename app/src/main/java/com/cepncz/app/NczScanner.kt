@@ -31,19 +31,23 @@ object NczScanner{
   return ""
  }
  fun scan(b:ByteArray):NczReport{
-  val entities=ArrayList<NczEntity>();val layers=ArrayList<String>();var version:String?=null;var p=0
+  val entities=ArrayList<NczEntity>();val layers=ArrayList<String>();val layerColors=ArrayList<Int>();var version:String?=null;var p=0
   while(p+6<b.size){
    val block=u32(b,p+1)+4;val total=block+1
    if(block<4||total>Int.MAX_VALUE||p.toLong()+total>b.size){p++;continue}
    val type=b[p].toInt() and 255
    if(type==25&&version==null){val n=b[p+5].toInt() and 255;version=legacy(b,p+6,n)}
    if(type==6&&p+18<=b.size){val count=(b[p+16].toInt() and 255)+((b[p+17].toInt() and 255)*256);for(i in 0 until count){val q=p+18+i*29;if(q+29>p+total)break;val s=lp(b,q+4,q+5);if(s.isNotBlank())layers.add(s)}}
+   if(type==28){
+    val name=if(p+6<b.size)legacy(b,p+6,b[p+5].toInt() and 255) else ""
+    if(name=="LEX.ST2"&&p+21<=b.size){val n=b[p+20].toInt() and 255;for(i in 0 until n){val q=p+79+i*256;if(q+3>p+total||q+3>b.size)break;val r=b[q].toInt() and 255;val g=b[q+1].toInt() and 255;val bl=b[q+2].toInt() and 255;layerColors.add(android.graphics.Color.rgb(r,g,bl))}}
+   }
    if(type==21||type==22)parseGeometry(b,p,block.toInt(),if(type==22)28 else 0,entities)
    else if(type in setOf(0,5,14,48,108,111,132,150,180))parseEmbedded(b,p+5,(p+total.toInt()).coerceAtMost(b.size),entities)
    p+=total.toInt()
   }
   if(entities.any{it.text=="SMART"})entities.removeAll{it.kind=="Symbol"&&it.layer==0&&it.symbolCode==0}
-  return NczReport(b.size,version,layers,entities)
+  return NczReport(b.size,version,layers,entities,layerColors)
  }
  private fun parseEmbedded(b:ByteArray,start:Int,end:Int,out:MutableList<NczEntity>){
   var q=start
@@ -79,11 +83,11 @@ object NczScanner{
     if(count>=2){val pts=ArrayList<NczPoint>();for(i in 0 until count){val q=o+g+113+i*24;if(q+24>end)break;val x=d(b,q);val y=d(b,q+8);if(valid(x,y))pts.add(point(x,y,d(b,q+16)))};if(pts.size>=2){val closed=hypot(pts.first().x-pts.last().x,pts.first().y-pts.last().y)<0.01;out.add(NczEntity(if(closed)"Polygon" else "Polyline",layer,pts,text=lp(b,o+g+86,o+g+87,120)))}}}
    9->{
     val ox=d(b,o+8);val oy=d(b,o+16);if(valid(ox,oy)){val pts=ArrayList<NczPoint>();pts.add(point(ox,oy,f(b,o+24)));var q=o+g+122;while(q+8<=end){val dx=f(b,q);val dy=f(b,q+4);if(!dx.isFinite()||!dy.isFinite())break;val rx=ox+dx;val ry=oy+dy;if(valid(rx,ry))pts.add(point(rx,ry));q+=18};if(pts.size>=2)out.add(NczEntity("Polyline",layer,pts))}}
-   10->{val ax=d(b,o+8);val ay=d(b,o+16);val q=o+g;if(q+124<=end){val bx=d(b,q+104);val by=d(b,q+112);if(valid(ax,ay)&&valid(bx,by)){val a=point(ax,ay);val z=point(bx,by);out.add(NczEntity("Polygon",layer,listOf(a,NczPoint(z.x,a.y),z,NczPoint(a.x,z.y)),rotation=radDeg(f(b,q+120))))}}}
+   10->{val ax=d(b,o+8);val ay=d(b,o+16);val q=o+g;if(q+124<=end){val bx=d(b,q+104);val by=d(b,q+112);if(valid(ax,ay)&&valid(bx,by)){val width=abs(bx-ax);val height=abs(by-ay);val ang=f(b,q+120);val bottomX=cos(ang);val bottomY=-sin(ang);val sideX=sin(ang);val sideY=cos(ang);val raw=listOf(ax to ay,(ax+bottomX*width) to (ay+bottomY*width),(ax+bottomX*width+sideX*height) to (ay+bottomY*width+sideY*height),(ax+sideX*height) to (ay+sideY*height));out.add(NczEntity("Polygon",layer,raw.map{point(it.first,it.second)},rotation=radDeg(ang)))}}}
    11->{if(o+82<=end){val x1=d(b,o+50);val y1=d(b,o+58);val x2=d(b,o+66);val y2=d(b,o+74);if(valid(x1,y1)&&valid(x2,y2)){val a=point(x1,y1);val z=point(x2,y2);out.add(NczEntity("Polygon",layer,listOf(a,NczPoint(z.x,a.y),z,NczPoint(a.x,z.y)),text="PAFTA"))}}}
    12->{if(o+122<=end){val ax=d(b,o+8);val ay=d(b,o+16);val bx=d(b,o+86);val by=d(b,o+94);val cx=d(b,o+106);val cy=d(b,o+114);if(valid(ax,ay)&&valid(bx,by)&&valid(cx,cy))out.add(NczEntity("Polygon",layer,listOf(point(ax,ay),point(bx,by),point(cx,cy))))}}
    13->{val x=d(b,o+8);val y=d(b,o+16);val q=o+g;if(valid(x,y))out.add(NczEntity("Block",layer,listOf(point(x,y,f(b,o+24))),text=lp(b,q+86,q+87,120),rotation=if(q+122<=end)radDeg(f(b,q+118)) else 0.0))}
-   15->{val x=d(b,o+8);val y=d(b,o+16);if(valid(x,y)){val grad=if(o+86<=end)f(b,o+82) else 0.0;val sc=if(o+90<=end)f(b,o+86) else 1.0;out.add(NczEntity("Block",layer,listOf(point(x,y,f(b,o+24))),text="SMART",rotation=normDeg(grad*.9),scale=sc))}}
+   15->{val x=d(b,o+8);val y=d(b,o+16);if(valid(x,y)){var width=if(o+177<=end)d(b,o+169) else 0.0;var height=if(o+185<=end)d(b,o+177) else 0.0;if((width<=0||height<=0)&&o+82<=end){val x2=d(b,o+66);val y2=d(b,o+74);if(valid(x2,y2)){width=abs(x2-x);height=abs(y2-y)}};val grad=if(o+86<=end)f(b,o+82) else 0.0;val sc=if(o+90<=end)f(b,o+86) else 1.0;val deg=normDeg(grad*.9);if(width>.001&&height>.001){val ang=deg*Math.PI/180.0;val bottomX=sin(ang);val bottomY=cos(ang);val sideX=cos(ang);val sideY=-sin(ang);val raw=listOf(x to y,(x+bottomX*width) to (y+bottomY*width),(x+bottomX*width+sideX*height) to (y+bottomY*width+sideY*height),(x+sideX*height) to (y+sideY*height));out.add(NczEntity("Polygon",layer,raw.map{point(it.first,it.second)},text="SMART",rotation=deg,scale=sc))}else out.add(NczEntity("Block",layer,listOf(point(x,y,f(b,o+24))),text="SMART",rotation=deg,scale=sc))}}
   }}catch(_:Exception){}
  }
 }
