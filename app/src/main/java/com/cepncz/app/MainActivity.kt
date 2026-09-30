@@ -60,6 +60,7 @@ class MainActivity:AppCompatActivity(){
   val parcelBtn=menuButton("PARSEL");parcelBtn.setOnClickListener{v->popup(v,listOf(
    "PARSEL SEÇ" to {cad.setQueryMode(CadView.QueryMode.SELECT);Toast.makeText(this,"Parsele dokunarak seç",Toast.LENGTH_SHORT).show()},
    "PARSEL BİLGİSİ" to {val s=cad.selectedParcelSummary();if(s!=null)AlertDialog.Builder(this).setTitle("PARSEL BİLGİSİ").setMessage(s).setPositiveButton("TAMAM",null).show() else Toast.makeText(this,"Önce bir parsel seç",Toast.LENGTH_SHORT).show()},
+   "KÖŞE / KENAR TABLOSU" to {val s=cad.selectedParcelCornerTable();if(s!=null){val tv=TextView(this).apply{text=s;textSize=12f;setTextColor(Color.WHITE);setPadding(dp(14),dp(12),dp(14),dp(12));typeface=android.graphics.Typeface.MONOSPACE};val sv=android.widget.HorizontalScrollView(this).apply{addView(tv)};AlertDialog.Builder(this).setTitle("KÖŞE • KENAR • SEMT").setView(sv).setPositiveButton("TAMAM",null).show()}else Toast.makeText(this,"Önce bir parsel seç",Toast.LENGTH_SHORT).show()},
    "TÜM KENARLARI YAZDIR" to {val n=cad.labelSelectedParcelEdges();Toast.makeText(this,if(n>0)"$n kenar uzunluğu yazdırıldı" else "Önce bir parsel seç",Toast.LENGTH_SHORT).show()},
    "KÖŞELERİ NOKTA YAP" to {val n=cad.saveSelectedParcelCorners();Toast.makeText(this,if(n>0)"$n köşe Nokta Listesine eklendi" else "Önce bir parsel seç",Toast.LENGTH_SHORT).show()}
   ))}
