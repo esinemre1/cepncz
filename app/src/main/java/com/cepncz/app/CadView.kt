@@ -147,7 +147,19 @@ class CadView(context:Context):View(context){
  fun clearSelection(){selected=null;onSelectionChanged?.invoke(null);invalidate()}
  fun selectedParcelSummary():String?{val e=selected?:return null;if(e.kind!="Polygon"||e.points.size<3)return null;return "Alan %.2f m² • Çevre %.2f m • %d köşe".format(area(e.points),perimeter(e.points),e.points.size)}
  fun labelSelectedParcelEdges():Int{val e=selected?:return 0;if(e.kind!="Polygon"||e.points.size<2)return 0;lengthLabels.clear();for(i in e.points.indices){val a=e.points[i];val b=e.points[(i+1)%e.points.size];val mid=NczPoint((a.x+b.x)/2.0,(a.y+b.y)/2.0);lengthLabels.add(LengthLabel(a,b,mid,hypot(a.x-b.x,a.y-b.y)))};invalidate();return lengthLabels.size}
- fun saveSelectedParcelCorners():Int{val e=selected?:return 0;if(e.kind!="Polygon")return 0;e.points.forEach{savedPoints.add(it)};invalidate();return e.points.size}
+ fun saveSelectedParcelCorners():Int{
+  val e=selected?:return 0;if(e.kind!="Polygon")return 0
+  val pts=if(e.points.size>2&&hypot(e.points.first().x-e.points.last().x,e.points.first().y-e.points.last().y)<.001)e.points.dropLast(1) else e.points
+  pts.forEach{p->if(savedPoints.none{hypot(it.x-p.x,it.y-p.y)<.001})savedPoints.add(p)}
+  invalidate();return pts.size
+ }
+ fun selectedParcelCornerTable():String?{
+  val e=selected?:return null;if(e.kind!="Polygon"||e.points.size<3)return null
+  val pts=if(hypot(e.points.first().x-e.points.last().x,e.points.first().y-e.points.last().y)<.001)e.points.dropLast(1) else e.points
+  val s=StringBuilder("No       Y             X          Kenar      Semt(g)\n")
+  for(i in pts.indices){val a=pts[i];val b=pts[(i+1)%pts.size];val dx=b.x-a.x;val dy=b.y-a.y;var gon=atan2(dx,dy)*200.0/Math.PI;if(gon<0)gon+=400.0;s.append("N%-3d %12.3f %12.3f %9.3f %9.4f\n".format(i+1,a.y,a.x,hypot(dx,dy),gon))}
+  return s.toString().trimEnd()
+ }
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
  private fun textRotation(nczDegrees:Double):Float{
@@ -313,12 +325,10 @@ class CadView(context:Context):View(context){
      val mid=NczPoint((p1.x+p2.x)/2.0,(p1.y+p2.y)/2.0);val md=screenDist(mid,px,py);if("ORTA" in snapKinds&&md<=24)candidates.add(SnapHit(mid,"ORTA",md))
      val near=nearestOnSegment(raw,p1,p2);val nd=screenDist(near,px,py);if("YAKIN" in snapKinds&&nd<=18)candidates.add(SnapHit(near,"YAKIN",nd))
      if(measurePts.isNotEmpty()){
-      val base=measurePts.last();val foot=nearestOnSegment(base,p1,p2)
-      val vx=p2.x-p1.x;val vy=p2.y-p1.y;val seg2=vx*vx+vy*vy
+      val base=measurePts.last();val vx=p2.x-p1.x;val vy=p2.y-p1.y;val seg2=vx*vx+vy*vy
       if(seg2>1e-12){
-       val t=((foot.x-p1.x)*vx+(foot.y-p1.y)*vy)/seg2
-       val fd=screenDist(foot,px,py)
-       if("DİK" in snapKinds&&t>=0.0&&t<=1.0&&fd<=24)candidates.add(SnapHit(foot,"DİK",fd))
+       val t=((base.x-p1.x)*vx+(base.y-p1.y)*vy)/seg2
+       if(t in 0.0..1.0){val foot=NczPoint(p1.x+t*vx,p1.y+t*vy);val fd=screenDist(foot,px,py);if("DİK" in snapKinds&&fd<=24)candidates.add(SnapHit(foot,"DİK",fd))}
       }
      }
     }
