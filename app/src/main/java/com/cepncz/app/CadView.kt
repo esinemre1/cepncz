@@ -150,7 +150,8 @@ class CadView(context:Context):View(context){
  fun saveSelectedParcelCorners():Int{val e=selected?:return 0;if(e.kind!="Polygon")return 0;e.points.forEach{savedPoints.add(it)};invalidate();return e.points.size}
 
  private fun bs():Float{if(width<80||height<80)return 1f;return min((width-70f)/(maxX-minX).coerceAtLeast(.001).toFloat(),(height-70f)/(maxY-minY).coerceAtLeast(.001).toFloat())}
- private fun canvasRotation(nczDegrees:Double):Float=(((nczDegrees-90.0+180.0)%360.0+360.0)%360.0-180.0).toFloat()\n private fun sx(x:Double,y:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
+ private fun canvasRotation(nczDegrees:Double):Float=(((nczDegrees-90.0+180.0)%360.0+360.0)%360.0-180.0).toFloat()
+ private fun sx(x:Double,y:Double)=((35f+(x-minX).toFloat()*bs()-width/2f)*zoom+width/2f+ox)
  private fun sy(x:Double,y:Double)=((35f+(maxY-y).toFloat()*bs()-height/2f)*zoom+height/2f+oy)
  private fun area(p:List<NczPoint>):Double{if(p.size<3)return 0.0;var s=0.0;for(i in p.indices){val a=p[i];val b=p[(i+1)%p.size];s+=a.x*b.y-b.x*a.y};return abs(s)/2}
  private fun length(p:List<NczPoint>,closed:Boolean=false):Double{if(p.size<2)return 0.0;var s=0.0;for(i in 0 until p.size-1){val a=p[i];val b=p[i+1];s+=hypot(a.x-b.x,a.y-b.y)};if(closed&&p.size>2){val a=p.last();val b=p.first();s+=hypot(a.x-b.x,a.y-b.y)};return s}
